@@ -6,12 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	_ "log"
+	"log"
+	"net/http"
+	"net/http/httputil"
 	"os"
+	"strings"
+
 	// "golang.org/x/oauth2"
 	// auth "golang.org/x/oauth2/google"
 	jwt "golang.org/x/oauth2/jwt"
 )
+
+var site = "dev-isgithubipv6"
 
 type JWTConfig struct {
 	Type                    string `json:"type"`
@@ -28,8 +34,6 @@ type JWTConfig struct {
 }
 
 func main() {
-	// var token *oauth2.Token
-	// ctx := context.Background()
 	if f, err := os.Open("tonym-us-311af670bc42.json"); err != nil {
 		panic(err)
 	} else {
@@ -54,27 +58,80 @@ func main() {
 			jConf.PrivateKey = []byte(conf.PrivateKey)
 			jConf.Subject = conf.ClientEmail
 			client := jConf.Client(ctx)
-			if resp, err := client.Get("https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
+			if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
 				panic(err)
 			} else {
-				if body, err := io.ReadAll(resp.Body); err != nil {
-					panic(err)
-				} else {
-					fmt.Printf("%s\n", string(body))
-				}
+				fmt.Printf("%s\n", body)
 			}
-
+			if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/"+site+"/versions"); err != nil {
+				panic(err)
+			} else {
+				fmt.Printf("%s\n", body)
+			}
+			if body, err := restCreateVersion(client, site); err != nil {
+				panic(err)
+			} else {
+				fmt.Printf("%s\n", body)
+			}
 		}
-
 	}
-
-	//credentials, err := auth.FindDefaultCredentials(ctx, scopes...)
-	// if err == nil {
-	// 	log.Printf("found default credentials. %v", credentials)
-	// 	token, err = credentials.TokenSource.Token()
-	// 	log.Printf("token: %v, err: %v", token, err)
-	// 	if err != nil {
-	// 		log.Print(err)
-	// 	}
-	// }
 }
+
+func restDebugRequest(req *http.Request) {
+	reqDump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("REQUEST:\n%s", string(reqDump))
+}
+
+func restCreateVersion(client *http.Client, site string) (string, error) {
+	reqBody := ` 
+	{
+             "config": {
+               "headers": [{
+                 "glob": "**",
+                 "headers": {
+                   "Cache-Control": "max-age=1800"
+                 }
+               }]
+             }
+           }
+	`
+	resource := "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/" + site + "/versions"
+	if req, err := http.NewRequest("POST", resource, strings.NewReader(reqBody)); err != nil {
+		panic(err)
+	} else {
+		if resp, err := client.Do(req); err != nil {
+			return "", err
+		} else {
+			if body, err := io.ReadAll(resp.Body); err != nil {
+				return "", err
+			} else {
+				return string(body), nil
+			}
+		}
+	}
+}
+
+func getResource(client *http.Client, resource string) (string, error) {
+	if resp, err := client.Get(resource); err != nil {
+		return "", err
+	} else {
+		if body, err := io.ReadAll(resp.Body); err != nil {
+			return "", err
+		} else {
+			return string(body), nil
+		}
+	}
+}
+
+//credentials, err := auth.FindDefaultCredentials(ctx, scopes...)
+// if err == nil {
+// 	log.Printf("found default credentials. %v", credentials)
+// 	token, err = credentials.TokenSource.Token()
+// 	log.Printf("token: %v, err: %v", token, err)
+// 	if err != nil {
+// 		log.Print(err)
+// 	}
+// }
