@@ -2,12 +2,15 @@ package compress
 
 import (
 	"compress/gzip"
+	"crypto/sha256"
+	"hash"
 	"io"
 	"os"
 )
 
 // compress file
-func compressFile(inFile, outFile string) error {
+func compressAndHashFile(inFile, outFile string) (*hash.Hash, error) {
+	h := sha256.New()
 	if inF, err := os.Open(inFile); err != nil {
 		panic(err)
 	} else {
@@ -16,12 +19,14 @@ func compressFile(inFile, outFile string) error {
 			panic(err)
 		} else {
 			defer outF.Close()
-			zWriter := gzip.NewWriter(outF)
+			mWriter := io.MultiWriter(outF, h)
+			zWriter := gzip.NewWriter(mWriter)
 			defer zWriter.Close()
+			// copy to gzip
 			if _, err := io.Copy(zWriter, inF); err != nil {
 				panic(err)
 			}
 		}
 	}
-	return nil
+	return &h, nil
 }
