@@ -3,13 +3,18 @@ package compress
 import (
 	"compress/gzip"
 	"crypto/sha256"
+	"fmt"
 	"hash"
 	"io"
 	"os"
 )
 
+func TextSum(h *hash.Hash) string {
+	return fmt.Sprintf("%x", (*h).Sum(nil))
+}
+
 // compress file
-func compressAndHashFile(inFile, outFile string) (*hash.Hash, error) {
+func CompressAndHashFile(inFile, outFile string) (*hash.Hash, error) {
 	h := sha256.New()
 	if inF, err := os.Open(inFile); err != nil {
 		panic(err)

@@ -1,14 +1,8 @@
 package compress
 
 import (
-	"fmt"
-	"hash"
 	"testing"
 )
-
-func textSum(h *hash.Hash) string {
-	return fmt.Sprintf("%x", (*h).Sum(nil))
-}
 
 /*
 
@@ -61,13 +55,13 @@ func Test_compressAndHashFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := compressAndHashFile(tt.args.inFile, tt.args.outFile)
+			got, err := CompressAndHashFile(tt.args.inFile, tt.args.outFile)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("compressAndHashFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if textSum(got) != tt.sum {
-				t.Errorf("compressAndHashFile() = %v, want %v", textSum(got), tt.sum)
+			if TextSum(got) != tt.sum {
+				t.Errorf("compressAndHashFile() = %v, want %v", TextSum(got), tt.sum)
 			}
 		})
 	}
