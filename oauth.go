@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"main/rest"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -71,7 +72,7 @@ func main() {
 			if body, err := restCreateVersion(client, site); err != nil {
 				panic(err)
 			} else {
-				fmt.Printf("%s\n", body)
+				fmt.Printf("%+v\n", body)
 			}
 		}
 	}
@@ -85,7 +86,7 @@ func restDebugRequest(req *http.Request) {
 	fmt.Printf("REQUEST:\n%s", string(reqDump))
 }
 
-func restCreateVersion(client *http.Client, site string) (string, error) {
+func restCreateVersion(client *http.Client, site string) (r rest.VersionCreateReturn, e error) {
 	reqBody := ` 
 	{
              "config": {
@@ -103,12 +104,15 @@ func restCreateVersion(client *http.Client, site string) (string, error) {
 		panic(err)
 	} else {
 		if resp, err := client.Do(req); err != nil {
-			return "", err
+			return rest.VersionCreateReturn{}, err
 		} else {
 			if body, err := io.ReadAll(resp.Body); err != nil {
-				return "", err
+				return rest.VersionCreateReturn{}, err
 			} else {
-				return string(body), nil
+				if err := json.Unmarshal(body, &r); err != nil {
+					panic(err)
+				}
+				return r, nil
 			}
 		}
 	}
