@@ -13,7 +13,7 @@ func myWalk(path string, f fs.FileInfo, err error) error {
 	countTest++
 	return nil
 }
-func countFiles(f os.DirEntry) {
+func countFiles(_ os.DirEntry) {
 	countTest++
 }
 func Test_processDir(t *testing.T) {
@@ -44,10 +44,11 @@ func Test_shaFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := shaFiles(tt.args.dirname); (err != nil) != tt.wantErr {
+			if s, err := ShaFiles(tt.args.dirname); (err != nil) != tt.wantErr {
 				t.Errorf("shaFiles() error = %v, wantErr %v", err, tt.wantErr)
+			} else {
+				t.Logf("%+v\n", s)
 			}
-			t.Logf("shafiles : %+v\n", TheShas)
 		})
 	}
 }

@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	fs "main/fs"
 	"main/rest"
 	"net/http"
 	"net/http/httputil"
@@ -18,7 +20,10 @@ import (
 	jwt "golang.org/x/oauth2/jwt"
 )
 
-var site = "dev-isgithubipv6"
+var (
+	site    = "dev-isgithubipv6"
+	version = "aff8740d2d0aa2dc"
+)
 
 type JWTConfig struct {
 	Type                    string `json:"type"`
@@ -35,6 +40,31 @@ type JWTConfig struct {
 }
 
 func main() {
+	client := authorizeClient(context.Background())
+	if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%s\n", body)
+	}
+	if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/"+site+"/versions?filter=status%3D%22CREATED%22"); err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%s\n", body)
+	}
+	// build sha index
+	if ts, err := fs.ShaFiles("../public"); err != nil {
+		panic(err)
+	} else {
+		if popFiles, err := restCreateVersionFilesManifest(client, ts, site, version); err != nil {
+			panic(err)
+		} else {
+			_ = popFiles
+		}
+	}
+}
+
+func authorizeClient(ctx context.Context) *http.Client {
+	var conf JWTConfig
 	if f, err := os.Open("tonym-us-311af670bc42.json"); err != nil {
 		panic(err)
 	} else {
@@ -42,42 +72,24 @@ func main() {
 		if bytes, err := io.ReadAll(cont); err != nil {
 			panic(err)
 		} else {
-			ctx := context.Background()
-			var conf JWTConfig
 			json.Unmarshal(bytes, &conf)
 			fmt.Printf("%+v\n", conf)
-			var jConf jwt.Config
-			jConf.Scopes = []string{
-				"https://www.googleapis.com/auth/cloud-platform",
-				"https://www.googleapis.com/auth/cloud-platform.read-only",
-				"https://www.googleapis.com/auth/firebase",
-				"https://www.googleapis.com/auth/firebase.readonly",
-			}
-			jConf.TokenURL = conf.TokenURI
-			jConf.Email = conf.ClientEmail
-			jConf.PrivateKeyID = conf.PrivateKeyID
-			jConf.PrivateKey = []byte(conf.PrivateKey)
-			jConf.Subject = conf.ClientEmail
-			client := jConf.Client(ctx)
-			if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
-				panic(err)
-			} else {
-				fmt.Printf("%s\n", body)
-			}
-			if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/"+site+"/versions"); err != nil {
-				panic(err)
-			} else {
-				fmt.Printf("%s\n", body)
-			}
-			if body, err := restCreateVersion(client, site); err != nil {
-				panic(err)
-			} else {
-				fmt.Printf("%+v\n", body)
-			}
 		}
+		var jConf jwt.Config
+		jConf.Scopes = []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+			"https://www.googleapis.com/auth/cloud-platform.read-only",
+			"https://www.googleapis.com/auth/firebase",
+			"https://www.googleapis.com/auth/firebase.readonly",
+		}
+		jConf.TokenURL = conf.TokenURI
+		jConf.Email = conf.ClientEmail
+		jConf.PrivateKeyID = conf.PrivateKeyID
+		jConf.PrivateKey = []byte(conf.PrivateKey)
+		jConf.Subject = conf.ClientEmail
+		return jConf.Client(ctx)
 	}
 }
-
 func restDebugRequest(req *http.Request) {
 	reqDump, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
@@ -86,6 +98,42 @@ func restDebugRequest(req *http.Request) {
 	fmt.Printf("REQUEST:\n%s", string(reqDump))
 }
 
+func restCreateVersionFilesManifest(client *http.Client, shas fs.ShaList, site, version string) (r rest.VersionPopulateFilesReturn, err error) {
+	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions/" + version + ":populateFiles"
+	// set up shas
+	var bodyJson rest.VersionPopulateFilesRequestBody
+	bodyJson.Files = make(map[string]string)
+	for _, s := range shas {
+		bodyJson.Files[s.RelPath] = s.Shasum
+	}
+	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
+		panic(err)
+	} else {
+		if req, err := http.NewRequest(http.MethodGet, resource, bytes.NewReader(bodyBuffer)); err != nil {
+			panic(err)
+		} else {
+			if res, err := client.Do(req); err != nil {
+				panic(err)
+			} else if res.StatusCode < 200 || res.StatusCode > 299 {
+				panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+			} else {
+				if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+					panic(err)
+				} else {
+					if err := json.Unmarshal(bodyBytes, &r); err != nil {
+						panic(err)
+					} else {
+						return r, nil
+					}
+
+				}
+			}
+
+		}
+
+	}
+
+}
 func restCreateVersion(client *http.Client, site string) (r rest.VersionCreateReturn, e error) {
 	reqBody := ` 
 	{
