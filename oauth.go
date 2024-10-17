@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
-	jwt "golang.org/x/oauth2/jwt"
 	"io"
 	"log"
 	fs "main/fs"
@@ -16,6 +16,8 @@ import (
 	"os"
 	ppath "path"
 	"strings"
+
+	jwt "golang.org/x/oauth2/jwt"
 )
 
 var (
@@ -43,6 +45,17 @@ type JWTConfig struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
+var (
+	flagSource string
+	flagTemp   string
+)
+
+func init() {
+	flag.StringVar(&flagSource, "source", "/content", "Source directory for content")
+	flag.StringVar(&flagTemp, "temp", os.TempDir(), "temp directory for content")
+	flag.Parse()
+}
+
 func main() {
 	client := authorizeClient(context.Background())
 	if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
@@ -66,10 +79,9 @@ func main() {
 
 	if cwd, err = os.Getwd(); err != nil {
 		panic(err)
-	} else {
-		stagingDir = ppath.Join(cwd, "temp")
-	}
-	if err := os.Chdir("../public"); err != nil {
+	} else if stagingDir, err := os.MkdirTemp(flagTemp, "firebase-"); err != nil {
+		panic(err)
+	} else if err := os.Chdir(flagSource); err != nil {
 		panic(err)
 	} else if ts, err := fs.ShaFiles("./", stagingDir); err != nil {
 		panic(err)
