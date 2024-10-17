@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	site    = "dev-isgithubipv6"
-	version = "aff8740d2d0aa2dc"
+	site       = "dev-isgithubipv6"
+	version    = "aff8740d2d0aa2dc"
+	stagingDir string
 )
 
 type JWTConfig struct {
@@ -54,8 +55,8 @@ func main() {
 	// build sha index
 	// get tmp dir
 	var (
-		stagingDir, cwd string
-		err             error
+		cwd string
+		err error
 	)
 
 	if cwd, err = os.Getwd(); err != nil {
@@ -69,10 +70,10 @@ func main() {
 		panic(err)
 	} else if popFiles, err := restCreateVersionPopulateFiles(client, ts, site, version); err != nil {
 		panic(err)
+	} else if err := restUploadFileList(client, popFiles); err != nil {
+		panic(err)
 	} else if err := os.Chdir(cwd); err != nil {
 		panic(err)
-	} else {
-		_ = popFiles
 	}
 }
 
@@ -111,6 +112,33 @@ func restDebugRequest(req *http.Request) {
 	fmt.Printf("REQUEST:\n%s", string(reqDump))
 }
 
+func restUploadFileList(client *http.Client, manifest rest.VersionPopulateFilesReturn) error {
+	for _, shaHash := range manifest.UploadRequiredHashes {
+		// open file reader
+		if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
+			panic(err)
+		} else if err := restUploadFile(client, f, shaHash, site, version); err != nil {
+			panic(err)
+		}
+	}
+	return nil
+}
+
+func restUploadFile(client *http.Client, bodyFile io.Reader, shaHash, site, version string) error {
+	resource := "https://upload-firebasehosting.googleapis.com/upload/sites/" + site + "/versions/" + version + "/files/" + shaHash
+	// set up shas
+	if req, err := http.NewRequest(http.MethodPost, resource, bodyFile); err != nil {
+		panic(err)
+	} else {
+		req.Header.Add("Content-Type", "application/octet-stream")
+		if res, err := client.Do(req); err != nil {
+			panic(err)
+		} else if res.StatusCode < 200 || res.StatusCode > 299 {
+			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+		}
+	}
+	return nil
+}
 func restCreateVersionPopulateFiles(client *http.Client, shas fs.ShaList, site, version string) (r rest.VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions/" + version + ":populateFiles"
 	// set up shas
