@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	fbcompress "main/compress"
 	"os"
+	ppath "path"
 	"path/filepath"
 )
 
@@ -13,17 +14,17 @@ type ShaRec struct {
 
 type ShaList []ShaRec
 
-func ShaFiles(dirname string) (ShaList, error) {
+func ShaFiles(dirname, tempDir string) (ShaList, error) {
 	var curShaList = make(ShaList, 0, 10)
 	shaProcess := func(path string, f fs.FileInfo, err error) error {
 		if f.IsDir() {
 			return nil
 		}
-		if h, err := fbcompress.CompressAndHashFile(path, "temp/"+f.Name()); err != nil {
+		if h, err := fbcompress.CompressAndHashFile(path, ppath.Join(tempDir, f.Name())); err != nil {
 			panic(err)
 		} else {
-			s := ShaRec{f.Name(), fbcompress.TextSum(h)}
-			if err := os.Rename("temp/"+f.Name(), "temp/"+s.Shasum); err != nil {
+			s := ShaRec{ppath.Join("/", f.Name()), fbcompress.TextSum(h)}
+			if err := os.Rename(ppath.Join(tempDir, f.Name()), ppath.Join(tempDir, s.Shasum)); err != nil {
 				panic(err)
 			}
 			curShaList = append(curShaList, s)

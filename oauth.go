@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	jwt "golang.org/x/oauth2/jwt"
 	"io"
 	"log"
 	fs "main/fs"
@@ -13,11 +14,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	ppath "path"
 	"strings"
-
-	// "golang.org/x/oauth2"
-	// auth "golang.org/x/oauth2/google"
-	jwt "golang.org/x/oauth2/jwt"
 )
 
 var (
@@ -44,22 +42,37 @@ func main() {
 	if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites"); err != nil {
 		panic(err)
 	} else {
-		fmt.Printf("%s\n", body)
+		// fmt.Printf("%s\n", body)
+		_ = body
 	}
 	if body, err := getResource(client, "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/"+site+"/versions?filter=status%3D%22CREATED%22"); err != nil {
 		panic(err)
 	} else {
-		fmt.Printf("%s\n", body)
+		// fmt.Printf("%s\n", body)
+		_ = body
 	}
 	// build sha index
-	if ts, err := fs.ShaFiles("../public"); err != nil {
+	// get tmp dir
+	var (
+		stagingDir, cwd string
+		err             error
+	)
+
+	if cwd, err = os.Getwd(); err != nil {
 		panic(err)
 	} else {
-		if popFiles, err := restCreateVersionFilesManifest(client, ts, site, version); err != nil {
-			panic(err)
-		} else {
-			_ = popFiles
-		}
+		stagingDir = ppath.Join(cwd, "temp")
+	}
+	if err := os.Chdir("../public"); err != nil {
+		panic(err)
+	} else if ts, err := fs.ShaFiles("./", stagingDir); err != nil {
+		panic(err)
+	} else if popFiles, err := restCreateVersionPopulateFiles(client, ts, site, version); err != nil {
+		panic(err)
+	} else if err := os.Chdir(cwd); err != nil {
+		panic(err)
+	} else {
+		_ = popFiles
 	}
 }
 
@@ -73,7 +86,7 @@ func authorizeClient(ctx context.Context) *http.Client {
 			panic(err)
 		} else {
 			json.Unmarshal(bytes, &conf)
-			fmt.Printf("%+v\n", conf)
+			// fmt.Printf("%+v\n", conf)
 		}
 		var jConf jwt.Config
 		jConf.Scopes = []string{
@@ -98,7 +111,7 @@ func restDebugRequest(req *http.Request) {
 	fmt.Printf("REQUEST:\n%s", string(reqDump))
 }
 
-func restCreateVersionFilesManifest(client *http.Client, shas fs.ShaList, site, version string) (r rest.VersionPopulateFilesReturn, err error) {
+func restCreateVersionPopulateFiles(client *http.Client, shas fs.ShaList, site, version string) (r rest.VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions/" + version + ":populateFiles"
 	// set up shas
 	var bodyJson rest.VersionPopulateFilesRequestBody
@@ -109,9 +122,11 @@ func restCreateVersionFilesManifest(client *http.Client, shas fs.ShaList, site, 
 	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
 		panic(err)
 	} else {
-		if req, err := http.NewRequest(http.MethodGet, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
 			panic(err)
 		} else {
+			restDebugRequest(req)
+			req.Header.Add("Content-Type", "application/json")
 			if res, err := client.Do(req); err != nil {
 				panic(err)
 			} else if res.StatusCode < 200 || res.StatusCode > 299 {
@@ -134,6 +149,7 @@ func restCreateVersionFilesManifest(client *http.Client, shas fs.ShaList, site, 
 	}
 
 }
+
 func restCreateVersion(client *http.Client, site string) (r rest.VersionCreateReturn, e error) {
 	reqBody := ` 
 	{

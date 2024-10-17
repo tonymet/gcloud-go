@@ -28,7 +28,7 @@ func Test_processDir(t *testing.T) {
 
 func Test_shaFiles(t *testing.T) {
 	type args struct {
-		dirname string
+		dirname, tempName string
 	}
 	tests := []struct {
 		name    string
@@ -37,14 +37,14 @@ func Test_shaFiles(t *testing.T) {
 	}{
 		{
 			"test1",
-			args{"../../public"},
+			args{"../../public", "temp"},
 			false,
 		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if s, err := ShaFiles(tt.args.dirname); (err != nil) != tt.wantErr {
+			if s, err := ShaFiles(tt.args.dirname, tt.args.tempName); (err != nil) != tt.wantErr {
 				t.Errorf("shaFiles() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				t.Logf("%+v\n", s)
