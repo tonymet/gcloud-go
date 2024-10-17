@@ -166,27 +166,24 @@ func RestCreateVersionPopulateFiles(client *http.Client, shas fs.ShaList, versio
 	}
 	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
 		panic(err)
+	} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		panic(err)
 	} else {
-		if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		RestDebugRequest(req)
+		req.Header.Add("Content-Type", "application/json")
+		if res, err := client.Do(req); err != nil {
+			panic(err)
+		} else if res.StatusCode < 200 || res.StatusCode > 299 {
+			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+		} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
 			panic(err)
 		} else {
-			RestDebugRequest(req)
-			req.Header.Add("Content-Type", "application/json")
-			if res, err := client.Do(req); err != nil {
-				panic(err)
-			} else if res.StatusCode < 200 || res.StatusCode > 299 {
-				panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
-			} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+			if err := json.Unmarshal(bodyBytes, &r); err != nil {
 				panic(err)
 			} else {
-				if err := json.Unmarshal(bodyBytes, &r); err != nil {
-					panic(err)
-				} else {
-					return r, nil
-				}
+				return r, nil
 			}
 		}
-
 	}
 }
 
@@ -206,20 +203,14 @@ func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn,
 	resource := "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/" + site + "/versions"
 	if req, err := http.NewRequest("POST", resource, strings.NewReader(reqBody)); err != nil {
 		panic(err)
-	} else {
-		if resp, err := client.Do(req); err != nil {
-			return VersionCreateReturn{}, err
-		} else {
-			if body, err := io.ReadAll(resp.Body); err != nil {
-				return VersionCreateReturn{}, err
-			} else {
-				if err := json.Unmarshal(body, &r); err != nil {
-					panic(err)
-				}
-				return r, nil
-			}
-		}
+	} else if resp, err := client.Do(req); err != nil {
+		return VersionCreateReturn{}, err
+	} else if body, err := io.ReadAll(resp.Body); err != nil {
+		return VersionCreateReturn{}, err
+	} else if err := json.Unmarshal(body, &r); err != nil {
+		panic(err)
 	}
+	return r, nil
 }
 
 func GetResource(client *http.Client, resource string) (string, error) {
