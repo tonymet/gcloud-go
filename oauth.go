@@ -48,11 +48,13 @@ type JWTConfig struct {
 var (
 	flagSource string
 	flagTemp   string
+	flagCred   string
 )
 
 func init() {
 	flag.StringVar(&flagSource, "source", "/content", "Source directory for content")
-	flag.StringVar(&flagTemp, "temp", os.TempDir(), "temp directory for content")
+	flag.StringVar(&flagTemp, "temp", os.TempDir(), "temp directory for staging files prior to upload")
+	flag.StringVar(&flagCred, "cred", "service-principal.json", "path to service principal")
 	flag.Parse()
 }
 
@@ -116,7 +118,7 @@ func siteVersionId(name string) (site string, version string, err error) {
 
 func authorizeClient(ctx context.Context) *http.Client {
 	var conf JWTConfig
-	if f, err := os.Open("tonym-us-311af670bc42.json"); err != nil {
+	if f, err := os.Open(flagCred); err != nil {
 		panic(err)
 	} else {
 		cont := bufio.NewReader(f)
