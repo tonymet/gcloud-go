@@ -24,6 +24,11 @@ var (
 	stagingDir string
 )
 
+const (
+	STATUS_FINALIZED = "FINALIZED"
+	STATUS_CREATED   = "CREATED"
+)
+
 type JWTConfig struct {
 	Type                    string `json:"type"`
 	ProjectID               string `json:"project_id"`
@@ -72,8 +77,12 @@ func main() {
 		panic(err)
 	} else if err := restUploadFileList(client, popFiles); err != nil {
 		panic(err)
+	} else if statusReturn, err := restVersionSetStatus(client, site, version, STATUS_FINALIZED); err != nil {
+		panic(err)
 	} else if err := os.Chdir(cwd); err != nil {
 		panic(err)
+	} else {
+		_ = statusReturn
 	}
 }
 
@@ -124,6 +133,59 @@ func restUploadFileList(client *http.Client, manifest rest.VersionPopulateFilesR
 	return nil
 }
 
+func restVersionSetStatus(client *http.Client, site, version, status string) (r rest.VersionStatusUpdateReturn, e error) {
+	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions/" + version + "?update_mask=status"
+	// set up shas
+	var bodyJson rest.VersionStatusUpdateRequestBody
+	bodyJson.Status = status
+	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
+		panic(err)
+	} else if req, err := http.NewRequest(http.MethodPatch, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		panic(err)
+	} else {
+		req.Header.Add("Content-Type", "application/json")
+		if res, err := client.Do(req); err != nil {
+			panic(err)
+		} else if res.StatusCode < 200 || res.StatusCode > 299 {
+			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+		} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+			panic(err)
+		} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
+			panic(err)
+		} else {
+			return r, nil
+		}
+	}
+}
+
+/*
+func restReleasesCreate(client *http.Client, site, version, status string) (r rest.ReleasesCreateReturn, e error) {
+
+	resource := https://firebasehosting.googleapis.com/v1beta1/sites/SITE_ID/releases?versionName=sites/SITE_ID/versions/VERSION_ID
+	// set up shas
+	var bodyJson rest.VersionStatusUpdateRequestBody
+	bodyJson.Status = status
+	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
+		panic(err)
+	} else if req, err := http.NewRequest(http.MethodPatch, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		panic(err)
+	} else {
+		req.Header.Add("Content-Type", "application/json")
+		if res, err := client.Do(req); err != nil {
+			panic(err)
+		} else if res.StatusCode < 200 || res.StatusCode > 299 {
+			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+		} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+			panic(err)
+		} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
+			panic(err)
+		} else {
+			return r, nil
+		}
+	}
+}
+*/
+
 func restUploadFile(client *http.Client, bodyFile io.Reader, shaHash, site, version string) error {
 	resource := "https://upload-firebasehosting.googleapis.com/upload/sites/" + site + "/versions/" + version + "/files/" + shaHash
 	// set up shas
@@ -159,23 +221,18 @@ func restCreateVersionPopulateFiles(client *http.Client, shas fs.ShaList, site, 
 				panic(err)
 			} else if res.StatusCode < 200 || res.StatusCode > 299 {
 				panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+			} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+				panic(err)
 			} else {
-				if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+				if err := json.Unmarshal(bodyBytes, &r); err != nil {
 					panic(err)
 				} else {
-					if err := json.Unmarshal(bodyBytes, &r); err != nil {
-						panic(err)
-					} else {
-						return r, nil
-					}
-
+					return r, nil
 				}
 			}
-
 		}
 
 	}
-
 }
 
 func restCreateVersion(client *http.Client, site string) (r rest.VersionCreateReturn, e error) {

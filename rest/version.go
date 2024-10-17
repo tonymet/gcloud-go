@@ -51,3 +51,21 @@ type VersionStatusUpdateReturn struct {
 	FileCount    string `json:"fileCount"`
 	VersionBytes string `json:"versionBytes"`
 }
+
+type ReleasesCreateReturn struct {
+	Name    string `json:"name"`
+	Version struct {
+		Name   string `json:"name"`
+		Status string `json:"status"`
+		Config struct {
+			Headers []struct {
+				Glob    string `json:"glob"`
+				Headers struct {
+					CacheControl string `json:"Cache-Control"`
+				} `json:"headers"`
+			} `json:"headers"`
+		} `json:"config"`
+	} `json:"version"`
+	Type        string    `json:"type"`
+	ReleaseTime time.Time `json:"releaseTime"`
+}
