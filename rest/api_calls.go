@@ -9,7 +9,6 @@ import (
 	"log"
 	fs "main/fs"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	ppath "path"
 	"strings"
@@ -190,7 +189,7 @@ func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn,
              }
            }
 	`
-	resource := "https://firebasehosting.googleapis.com/v1beta1/projects/tonym-us/sites/" + site + "/versions"
+	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions"
 	if req, err := http.NewRequest("POST", resource, strings.NewReader(reqBody)); err != nil {
 		panic(err)
 	} else if resp, err := client.Do(req); err != nil {
