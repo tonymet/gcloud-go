@@ -14,6 +14,8 @@ time requirements, gcloud-go will avoid unnecessary resources
 ### In Progress
 * \> 1000 file / paginated upload support
 * multi-core file signing & compression
+* gcs storage & firebase storage support for large files
+* google cloud pub/sub support for triggering builds
 
 
 ## Compared to Firebase-tools
