@@ -26,7 +26,7 @@ github_release(){
     -H "Authorization: Bearer $GH_TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
     https://api.github.com/repos/${owner}/${repo}/releases \
-    -d "{\"tag_name\":\"${TAG}\",\"target_commitish\":\"master\",\"name\":\"${TAG}\",\"body\":\"gcloud-go cli release\",\"draft\":false,\"prerelease\":false,\"generate_release_notes\":false}"\
+    -d "{\"tag_name\":\"${TAG}\",\"target_commitish\":\"${SHA}\",\"name\":\"${TAG}\",\"body\":\"gcloud-go cli release\",\"draft\":false,\"prerelease\":false,\"generate_release_notes\":false}"\
     )
     if [[ $? -ne 0 ]]; then
         echo "ERROR: create release fail"
