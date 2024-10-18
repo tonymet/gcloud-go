@@ -1,7 +1,7 @@
 
 ## About
 
-gcloud-go -- a fast & lightweight rest client for deployment to Firebase Hosting
+gcloud-go -- a fast & lightweight rest client for deployment to Firebase Hosting, Google Cloud Storage and other APIs
 
 For VM images, containers & cloud functions that have demanding iops, vcpu or
 time requirements, gcloud-go will avoid unnecessary resources
@@ -33,10 +33,12 @@ time requirements, gcloud-go will avoid unnecessary resources
 
 
 ## Installation
+See [releases page for the latest builds](https://github.com/tonymet/gcloud-go/releases)
+
 To install inside your terminal, download and copy to your path.
 ```
 # download
-$ curl -O https://github.com/tonymet/gcloud-go/releases/download/2024-10-18-b096696/gcloud-go-2024-10-18-b096696-linux-x86_64.tar.gz
+$ curl -O https://github.com/tonymet/gcloud-go/releases/download/2024-10-18-d5dc06a/gcloud-go-2024-10-18-d5dc06a-linux-x86_64.tar.gz
 # un-tar
 $ tar -zxf *tar.gz
 # run the binary
@@ -53,7 +55,7 @@ $ ./gcloud-go
 ```
 
 ### Example Build
-For use inside docker images, copy the pre-built binary using the command `COPY --image=`
+For use inside docker images, copy the pre-built binary using the command `COPY --from=`
 You can run the command inside your scripts by calling `/gcloud-go`
 
 ```
