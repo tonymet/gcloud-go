@@ -52,14 +52,6 @@ func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client,
 	}
 }
 
-func RestDebugRequest(req *http.Request) {
-	reqDump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("REQUEST:\n%s", string(reqDump))
-}
-
 func RestUploadFileList(client *http.Client, versionId string, manifest VersionPopulateFilesReturn, stagingDir string) error {
 	// workerPool to make http requests.
 	// jobs = input sha, results = output
@@ -96,8 +88,6 @@ func RestUploadFileList(client *http.Client, versionId string, manifest VersionP
 	return nil
 }
 
-//	func restVersionSetStatus(client *http.Client, site, version, status string) (r rest.VersionStatusUpdateReturn, e error) {
-//		resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions/" + version + "?update_mask=status"
 func RestVersionSetStatus(client *http.Client, versionId string, status string) (r VersionStatusUpdateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + "?update_mask=status"
 	// set up shas
@@ -124,8 +114,6 @@ func RestVersionSetStatus(client *http.Client, versionId string, status string) 
 	}
 }
 
-// func restReleasesCreate(client *http.Client, site, version string) (r rest.ReleasesCreateReturn, e error) {
-// resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/releases?versionName=sites/" + site + "/versions/" + version
 func RestReleasesCreate(client *http.Client, site, versionId string) (r ReleasesCreateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/releases?versionName=" + versionId
 	// set up shas
@@ -145,8 +133,6 @@ func RestReleasesCreate(client *http.Client, site, versionId string) (r Releases
 	}
 }
 
-// func restUploadFile(client *http.Client, bodyFile io.Reader, shaHash, site, version string) error {
-// resource := "https://upload-firebasehosting.googleapis.com/upload/sites/" + site + "/versions/" + version + "/files/" + shaHash
 func RestUploadFile(client *http.Client, bodyFile io.Reader, shaHash, versionId string) error {
 	resource := "https://upload-firebasehosting.googleapis.com/upload/" + versionId + "/files/" + shaHash
 	// set up shas
