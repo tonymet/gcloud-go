@@ -20,7 +20,7 @@ github_release(){
     TAG=$VERSION
     echo "creating release version=$VERSION"
     res=$(\
-        curl --verbose -s -L -f \
+        curl -s -L -f \
     -X POST \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $GH_TOKEN" \

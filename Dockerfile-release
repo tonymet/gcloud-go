@@ -1,0 +1,7 @@
+FROM alpine AS build
+RUN apk --no-cache add ca-certificates curl zsh git jq make
+WORKDIR /src/
+COPY --from=us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go  /gcloud-go ./build/bin/gcloud-go
+RUN touch ./build/bin/gcloud-go
+COPY . .
+CMD ["zsh", "github-release.sh"]

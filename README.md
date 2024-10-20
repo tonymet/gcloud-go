@@ -75,8 +75,8 @@ $ gcloud-go deploy -site dev-isgithubipv6 -source content
 ```
 #### Full usage
 ```
-usage: ./gcloud-go deploy [options]
- options:
+usage: ./gcloud-go COMMAND [options]
+ deploy:
   -connections int
         number of connections (default 8)
   -cred string
@@ -87,6 +87,14 @@ usage: ./gcloud-go deploy [options]
         Source directory for content (default "content")
   -temp string
         temp directory for staging files prior to upload (default "/tmp")
+
+storage:
+  -bucket string
+        GCS Bucket
+  -prefix string
+        GCS Object Prefix (default "/")
+  -target string
+        Target Directory for download (default ".")
 
 ```
 

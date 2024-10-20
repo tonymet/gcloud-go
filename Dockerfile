@@ -4,7 +4,7 @@ WORKDIR /app/src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o /app/bin/gcloud-go -ldflags="-extldflags=-static" .
+RUN go build -o /app/bin/gcloud-go -ldflags="-w -extldflags=-static" .
 RUN touch /tmp/.tmp
 FROM scratch
 # Copy binary from build step

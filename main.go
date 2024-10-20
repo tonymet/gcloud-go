@@ -17,7 +17,8 @@ const (
 
 var (
 	flagSource, flagTemp, flagCred, flagSite *string
-	cmdDeploy                                *flag.FlagSet
+	flagBucket, flagPrefix, flagTarget       *string
+	cmdDeploy, cmdStorage                    *flag.FlagSet
 )
 
 func init() {
@@ -29,10 +30,16 @@ func init() {
 	rest.FlagConn = cmdDeploy.Int("connections", 8, "number of connections")
 	flagSource = cmdDeploy.String("source", "content", "Source directory for content")
 	flagSite = cmdDeploy.String("site", "default", "Name of site (not project)")
+	cmdStorage = flag.NewFlagSet("storage", flag.ExitOnError)
+	flagBucket = cmdStorage.String("bucket", "", "GCS Bucket")
+	flagPrefix = cmdStorage.String("prefix", "/", "GCS Object Prefix")
+	flagTarget = cmdStorage.String("target", ".", "Target Directory for download")
 }
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s deploy [options]\n options:\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "usage: %s deploy|storage [options]\n options:\n", os.Args[0])
 	cmdDeploy.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "storage:\n")
+	cmdStorage.PrintDefaults()
 }
 func main() {
 	if len(os.Args) < 2 {
@@ -42,7 +49,7 @@ func main() {
 	switch os.Args[1] {
 	case "deploy":
 		cmdDeploy.Parse(os.Args[2:])
-		if client, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
+		if client, _, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
 			panic(err)
 		} else if cwd, err := os.Getwd(); err != nil {
 			panic(err)
@@ -70,6 +77,17 @@ func main() {
 			_ = statusReturn
 			_ = statusRelease
 			_ = statusVersionCreate
+		}
+	case "storage":
+		cmdStorage.Parse(os.Args[2:])
+		if cmdStorage.NFlag() != 3 {
+			usage()
+			os.Exit(2)
+		}
+		if _, credsPackage, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
+			panic(err)
+		} else {
+			rest.StorageDownload(credsPackage.GoogleCredentials, *flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages)
 		}
 	default:
 		usage()

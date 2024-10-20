@@ -13,8 +13,11 @@ import (
 	ppath "path"
 	"strings"
 
+	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/httptransport"
+	"cloud.google.com/go/auth/oauth2adapt"
+	"golang.org/x/oauth2/google"
 )
 
 var FlagConn *int
@@ -33,7 +36,14 @@ type JWTConfig struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client, error) {
+// func Oauth2CredentialsFromAuthCredentials(creds *auth.Credentials) *google.Credentials
+
+type CredsPackage struct {
+	AuthCredentials   *auth.Credentials
+	GoogleCredentials *google.Credentials
+}
+
+func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client, CredsPackage, error) {
 	if creds, err := credentials.DetectDefault(&credentials.DetectOptions{
 		Scopes: []string{
 			"https://www.googleapis.com/auth/firebase",
@@ -47,7 +57,7 @@ func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client,
 		panic(err)
 	} else {
 		log.Printf("credentials authorized")
-		return client, nil
+		return client, CredsPackage{creds, oauth2adapt.Oauth2CredentialsFromAuthCredentials(creds)}, nil
 	}
 }
 
