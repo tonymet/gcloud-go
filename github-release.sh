@@ -10,8 +10,6 @@ build(){
 github_release(){
     owner=tonymet
     repo="gcloud-go"
-    COMMIT=$(git log -1 --pretty=%h)
-    SHA=$(git log -1 --pretty=%H)
     VERSION=$(date +%Y-%m-%d)-${COMMIT}
     if [[ -z $GH_TOKEN ]]; then
         echo "GH_TOKEN is unset"
