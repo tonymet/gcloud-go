@@ -41,28 +41,35 @@ func Test_compressAndHashCopy(t *testing.T) {
 }
 
 func Test_compressAndHashFile(t *testing.T) {
-	t.Skip("manual testing")
 	type args struct {
 		inFile  string
 		outFile string
 	}
 	tests := []struct {
 		name    string
-		args    args
+		args    struct{ inFile, outFile string }
+		fsMock  fileSystem
 		wantErr bool
 		sum     string
 	}{
 		{
-			"test1",
+			"testGood",
 			args{"test1.txt", "test1.txt.gz"},
+			stringFS{"asdfasdf\n"},
 			false,
-			// "asdfasdf\n"
 			"29570ad7ec76d864317b8fe582d43bab1493fe445be76c6cb2b024ffb0fb5625",
 		},
-		// TODO: Add test cases.
-		// TODO: Add test cases.
+		{
+			"testError",
+			args{"test1.txt", "test1.txt.gz"},
+			stringFS{"xasdfasdf\n"},
+			false,
+			"b80f85cff304e74a317654805b2e93e801c5a49f7039412b020797ad56e3b692",
+		},
 	}
 	for _, tt := range tests {
+		// string-backed mock
+		fs = tt.fsMock
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := HashAndCompressFile(tt.args.outFile, tt.args.inFile)
 			if (err != nil) != tt.wantErr {

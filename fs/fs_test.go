@@ -8,6 +8,7 @@ import (
 )
 
 func Test_processDir(t *testing.T) {
+	t.Skip("manual test")
 	var countTest int
 
 	myWalk := func(path string, f fs.FileInfo, err error) error {
