@@ -7,14 +7,14 @@ For VM images, containers & cloud functions that have demanding iops, vcpu or
 time requirements, gcloud-go will avoid unnecessary resources
 
 ### Features
-* concurrent & resume-able uploads. Only modified files are uploaded during release
+* concurrent & incremental uploads. Only modified files are uploaded during release
 * uses native authentication / metadata service within the cloud
 * docker image and linux-amd64 binaries available (see below)
+* sync 10k files in seconds with fixed memory
+* GCS storage downloads
 
 ### In Progress
-* \> 1000 file / paginated upload support
 * multi-core file signing & compression
-* gcs storage & firebase storage support for large files
 * google cloud pub/sub support for triggering builds
 
 
