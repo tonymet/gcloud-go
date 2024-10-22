@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -44,7 +45,7 @@ func Test_shaFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if s, err := ShaFiles(tt.args.dirname, tt.args.tempName); (err != nil) != tt.wantErr {
+			if s, err := ShaFiles(&sync.WaitGroup{}, tt.args.dirname, tt.args.tempName); (err != nil) != tt.wantErr {
 				t.Errorf("shaFiles() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				t.Logf("%+v\n", s)

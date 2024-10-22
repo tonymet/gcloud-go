@@ -13,16 +13,16 @@
             "env": {
                 // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-311af670bc42.json"
             },
-            // "args": [
-            //     "deploy"
-            //     "-source",
-            //     "../public",
-            //     "-site",
-            //     "dev-isgithubipv6"
-            // ]
             "args": [
-                "storage"
+                "deploy",
+                "-source",
+                "../isgithubipv6.lol/public",
+                "-site",
+                "dev-isgithubipv6"
             ]
+            // "args": [
+            //     "storage"
+            // ]
         }
     ]
 }

@@ -6,16 +6,18 @@ import (
 	"os"
 	ppath "path"
 	"path/filepath"
+	"sync"
 )
 
 type ShaRec struct {
 	RelPath, Shasum string
+	err             error
 }
 
 type ShaList []ShaRec
 
-func ShaFiles(dirname, tempDir string) (ShaList, error) {
-	var curShaList = make(ShaList, 0, 10)
+func ShaFiles(wg *sync.WaitGroup, dirname, tempDir string) (<-chan ShaRec, error) {
+	shaChannel := make(chan ShaRec)
 	shaProcess := func(path string, f fs.FileInfo, err error) error {
 		if f.IsDir() {
 			return nil
@@ -23,14 +25,19 @@ func ShaFiles(dirname, tempDir string) (ShaList, error) {
 		if h, err := fbcompress.CompressAndHashFile(path, ppath.Join(tempDir, f.Name())); err != nil {
 			panic(err)
 		} else {
-			s := ShaRec{ppath.Join("/", path), fbcompress.TextSum(h)}
+			s := ShaRec{ppath.Join("/", path), fbcompress.TextSum(h), nil}
 			if err := os.Rename(ppath.Join(tempDir, f.Name()), ppath.Join(tempDir, s.Shasum)); err != nil {
 				panic(err)
 			}
-			curShaList = append(curShaList, s)
+			shaChannel <- s
 		}
 		return nil
 	} // walk files and update
-	filepath.Walk(dirname, shaProcess)
-	return curShaList, nil
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		filepath.Walk(dirname, shaProcess)
+		close(shaChannel)
+	}()
+	return shaChannel, nil
 }

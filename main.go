@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	fs "main/fs"
 	"main/rest"
 	"os"
 )
@@ -57,15 +56,13 @@ func main() {
 			panic(err)
 		} else if err := os.Chdir(*flagSource); err != nil {
 			panic(err)
-		} else if ts, err := fs.ShaFiles("./", stagingDir); err != nil {
-			panic(err)
 		} else if statusVersionCreate, err := rest.RestCreateVersion(client, *flagSite); err != nil {
 			panic(err)
 		} else if statusVersionCreate.Status != STATUS_CREATED {
 			panic("status not created")
-		} else if popFiles, err := rest.RestCreateVersionPopulateFiles(client, ts, statusVersionCreate.Name); err != nil {
+		} else if popFiles, err := rest.RestCreateVersionPopulateFiles(client, stagingDir, statusVersionCreate.Name); err != nil {
 			panic(err)
-		} else if err := rest.RestUploadFileList(client, statusVersionCreate.Name, popFiles, stagingDir); err != nil {
+		} else if err := rest.RestUploadFileList(client, statusVersionCreate.Name, popFiles, stagingDir); len(err) != 0 {
 			panic(err)
 		} else if statusReturn, err := rest.RestVersionSetStatus(client, statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
 			panic(err)

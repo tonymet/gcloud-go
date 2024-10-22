@@ -12,6 +12,7 @@ import (
 	"os"
 	ppath "path"
 	"strings"
+	"sync"
 
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
@@ -19,6 +20,8 @@ import (
 	"cloud.google.com/go/auth/oauth2adapt"
 	"golang.org/x/oauth2/google"
 )
+
+const REST_PAGE_SIZE = 1000
 
 var FlagConn *int
 
@@ -61,40 +64,46 @@ func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client,
 	}
 }
 
-func RestUploadFileList(client *http.Client, versionId string, manifest VersionPopulateFilesReturn, stagingDir string) error {
-	// workerPool to make http requests.
-	// jobs = input sha, results = output
-	httpWorker := func(jobs <-chan string, results chan<- error) {
-		for shaHash := range jobs {
-			if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
-				results <- err
-			} else if err := RestUploadFile(client, f, shaHash, versionId); err != nil {
-				results <- err
+func RestUploadFileList(client *http.Client, versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) []error {
+	errorSet := make([]error, 0, len(manifestSet))
+	for _, manifest := range manifestSet {
+		if len(manifest.UploadRequiredHashes) == 0 {
+			continue
+		}
+		// worker to upload files.  non-blocking because bufferred channel
+		httpWorker := func(jobs <-chan string, results chan<- error) {
+			for shaHash := range jobs {
+				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
+					results <- err
+				} else if err := RestUploadFile(client, f, shaHash, versionId); err != nil {
+					results <- err
+				}
+				results <- nil
 			}
-			results <- nil
 		}
-	}
-	var numJobs = len(manifest.UploadRequiredHashes)
-	jobs, results := make(chan string, numJobs), make(chan error, numJobs)
-	// start workers
-	for w := 1; w <= *FlagConn; w++ {
-		go httpWorker(jobs, results)
-	}
-	// send each sha to jobs channel.
-	for _, shaHash := range manifest.UploadRequiredHashes {
-		jobs <- shaHash
-	}
-	close(jobs)
-	// read from results.  return error
-	// TODO: better error handling (e.g. dlq)
-	for a := 1; a <= numJobs; a++ {
-		err := <-results
-		if err != nil {
-			return err
+		var numJobs = len(manifest.UploadRequiredHashes)
+		// buffer channels = numJobs to avoid blocking
+		jobs, results := make(chan string, numJobs), make(chan error, numJobs)
+		// start workers
+		for w := 1; w <= *FlagConn; w++ {
+			go httpWorker(jobs, results)
 		}
+		// send each sha to jobs channel.
+		for _, shaHash := range manifest.UploadRequiredHashes {
+			jobs <- shaHash
+		}
+		close(jobs)
+		// read from results.  return error
+		// TODO: better error handling (e.g. dlq)
+		for a := 1; a <= numJobs; a++ {
+			err := <-results
+			if err != nil {
+				errorSet = append(errorSet, err)
+			}
+		}
+		log.Printf("upload complete: %d files", len(manifest.UploadRequiredHashes))
 	}
-	log.Printf("upload complete: %d files", len(manifest.UploadRequiredHashes))
-	return nil
+	return errorSet
 }
 
 func RestVersionSetStatus(client *http.Client, versionId string, status string) (r VersionStatusUpdateReturn, e error) {
@@ -157,33 +166,60 @@ func RestUploadFile(client *http.Client, bodyFile io.Reader, shaHash, versionId 
 	}
 	return nil
 }
-func RestCreateVersionPopulateFiles(client *http.Client, shas fs.ShaList, versionId string) (r VersionPopulateFilesReturn, err error) {
+func RestCreateVersionPopulateFiles(client *http.Client, stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
-	// set up shas
-	var bodyJson VersionPopulateFilesRequestBody
-	bodyJson.Files = make(map[string]string)
-	for _, s := range shas {
-		bodyJson.Files[s.RelPath] = s.Shasum
-	}
-	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
-		panic(err)
-	} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
-		panic(err)
-	} else {
-		req.Header.Add("Content-Type", "application/json")
-		if res, err := client.Do(req); err != nil {
-			panic(err)
-		} else if res.StatusCode < 200 || res.StatusCode > 299 {
-			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
-		} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
-			panic(err)
-		} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
-			panic(err)
-		} else {
-			log.Printf("files populated: %d files ", len(bodyJson.Files))
-			return r, nil
+	var wgAll sync.WaitGroup
+	// start goroutine to scan dirs
+	shas, _ := fs.ShaFiles(&wgAll, "./", stagingDir)
+	// goroutine to send requests
+	wgAll.Add(1)
+	go func() {
+		defer wgAll.Done()
+		// set up shas
+		vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
+		lastPage := false
+		// loop over pages/ size = 1000
+		for {
+			var (
+				bodyJson VersionPopulateFilesRequestBody
+				r        VersionPopulateFilesReturn
+			)
+			bodyJson.Files = make(map[string]string)
+			for i := 0; i < REST_PAGE_SIZE; i++ {
+				if s, ok := <-shas; !ok {
+					lastPage = true
+					break
+				} else {
+					bodyJson.Files[s.RelPath] = s.Shasum
+				}
+			}
+			// send api call
+			if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
+				panic(err)
+			} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
+				panic(err)
+			} else {
+				req.Header.Add("Content-Type", "application/json")
+				if res, err := client.Do(req); err != nil {
+					panic(err)
+				} else if res.StatusCode < 200 || res.StatusCode > 299 {
+					panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+				} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+					panic(err)
+				} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
+					panic(err)
+				} else {
+					log.Printf("files populated: %d files ", len(bodyJson.Files))
+					vpfrs = append(vpfrs, r)
+				}
+				if lastPage {
+					break
+				}
+			}
 		}
-	}
+	}()
+	wgAll.Wait()
+	return vpfrs, nil
 }
 
 func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn, e error) {
