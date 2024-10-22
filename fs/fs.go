@@ -22,7 +22,7 @@ func ShaFiles(wg *sync.WaitGroup, dirname, tempDir string) (<-chan ShaRec, error
 		if f.IsDir() {
 			return nil
 		}
-		if h, err := fbcompress.CompressAndHashFile(path, ppath.Join(tempDir, f.Name())); err != nil {
+		if h, err := fbcompress.HashAndCompressFile(ppath.Join(tempDir, f.Name()), path); err != nil {
 			panic(err)
 		} else {
 			s := ShaRec{ppath.Join("/", path), fbcompress.TextSum(h), nil}
