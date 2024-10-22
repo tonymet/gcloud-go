@@ -17,9 +17,10 @@ steps:
 images:
 - us-west1-docker.pkg.dev/$PROJECT_ID/gcloud-lite/gcloud-go
 - us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/gcloud-go-release
-
 availableSecrets:
   secretManager:
   - versionName: projects/$PROJECT_ID/secrets/GH_TOKEN/versions/1
     env: GH_TOKEN
 tags: [latest]
+options:
+  logging: CLOUD_LOGGING_ONLY
