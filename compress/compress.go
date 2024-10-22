@@ -6,24 +6,13 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"os"
 )
-
-type discardCloser struct {
-	io.Writer
-}
-
-func (discardCloser) Close() error {
-	return nil
-}
-
-var discardWriter = discardCloser{io.Discard}
 
 func TextSum(h *hash.Hash) string {
 	return fmt.Sprintf("%x", (*h).Sum(nil))
 }
 
-func hashCompressCopy(target io.WriteCloser, source io.Reader) (*hash.Hash, error) {
+func hashAndCompressCopy(target io.WriteCloser, source io.Reader) (*hash.Hash, error) {
 	h := sha256.New()
 	mWriter := io.MultiWriter(target, h)
 	zWriter := gzip.NewWriter(mWriter)
@@ -37,11 +26,11 @@ func hashCompressCopy(target io.WriteCloser, source io.Reader) (*hash.Hash, erro
 
 // compress file
 func HashAndCompressFile(outFile, inFile string) (*hash.Hash, error) {
-	if inF, err := os.Open(inFile); err != nil {
+	if inF, err := fs.Open(inFile); err != nil {
 		panic(err)
-	} else if outF, err := os.Create(outFile); err != nil {
+	} else if outF, err := fs.Create(outFile); err != nil {
 		panic(err)
-	} else if h, err := hashCompressCopy(outF, inF); err != nil {
+	} else if h, err := hashAndCompressCopy(outF, inF); err != nil {
 		return nil, err
 	} else {
 		inF.Close()
