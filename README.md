@@ -38,7 +38,7 @@ See [releases page for the latest builds](https://github.com/tonymet/gcloud-go/r
 To install inside your terminal, download and copy to your path.
 ```
 # download
-$ curl -O https://github.com/tonymet/gcloud-go/releases/download/2024-10-18-d5dc06a/gcloud-go-2024-10-18-d5dc06a-linux-x86_64.tar.gz
+$ curl -LO https://github.com/tonymet/gcloud-go/releases/download/2024-10-18-d5dc06a/gcloud-go-2024-10-18-d5dc06a-linux-x86_64.tar.gz
 # un-tar
 $ tar -zxf *tar.gz
 # run the binary
@@ -47,11 +47,14 @@ $ ./gcloud-go
 
 
 ## Docker Images
+See [Google Artifact Registry](us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go) (similar to Docker Hub) for docker images.
+
 ### Example Run
 ```
-	$ docker run -v$HOME/public:/content -v$(pwd):/src \
-    us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go \
-    -source /content -cred /src/service-ident-3xxxc42.json; 
+$ docker run -v$HOME/public:/content -v$(pwd):/src \
+us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go \
+deploy -source /content -cred /src/service-ident-3xxxc42.json \
+-site $SITE_NAME;
 ```
 
 ### Example Build
