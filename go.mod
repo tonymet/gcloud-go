@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/auth v0.9.9
 	cloud.google.com/go/auth/oauth2adapt v0.2.4
 	cloud.google.com/go/storage v1.45.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
 	golang.org/x/oauth2 v0.23.0
 	google.golang.org/api v0.203.0
 )

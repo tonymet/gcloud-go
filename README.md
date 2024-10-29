@@ -51,10 +51,16 @@ See [Google Artifact Registry](us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gclo
 
 ### Example Run
 ```
+# run inside GCE using metadata-based credentials
+$ docker run -v $(pwd)/test-output-small:/content \
+    gcloud-go deploy -source /content -site $SITE_NAME
+
+
+# run outside GCE with credentaial key json
 $ docker run -v$HOME/public:/content -v$(pwd):/src \
 us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go \
-deploy -source /content -cred /src/service-ident-3xxxc42.json \
--site $SITE_NAME;
+    deploy -source /content -cred /src/service-ident-3xxxc42.json \
+    -site $SITE_NAME;
 ```
 
 ### Example Build

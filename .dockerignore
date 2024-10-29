@@ -1,7 +1,7 @@
-.env
-build
-tmp
-cloudbuild.yaml
-gcloud-go
-README.md
-tonym-us*.json
+*
+!main.go
+!compress
+!rest
+!fs
+!go.mod
+!go.sum

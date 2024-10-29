@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"main/rest"
 	"os"
+	_ "golang.org/x/crypto/x509roots/fallback"
 )
 
 const (
