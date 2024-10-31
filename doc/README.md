@@ -9,7 +9,7 @@
 
 ## Authentication Overview
 Google uses internal and external (development) authorization schemes to get an auth token. 
-outside the cloud (development) , GOOGLE_DEFAULT_CREDENTAILS is used with path to service credential json file
+outside the cloud (development) , GOOGLE_DEFAULT_CREDENTIALS is used with path to service credential json file
 Inside the cloud, metadata server is used. 
 
 go api credentials.DetectDefault will test for the appropriate scheme. 
