@@ -3,8 +3,8 @@ module main
 go 1.23.2
 
 require (
-	cloud.google.com/go/auth v0.9.9
-	cloud.google.com/go/auth/oauth2adapt v0.2.4
+	cloud.google.com/go/auth v0.10.0
+	cloud.google.com/go/auth/oauth2adapt v0.2.5
 	cloud.google.com/go/storage v1.45.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
 	golang.org/x/oauth2 v0.23.0
@@ -53,6 +53,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241021214115-324edc3d5d38 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241021214115-324edc3d5d38 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/grpc/stats/opentelemetry v0.0.0-20241025232817-cb329375b14e // indirect
+	google.golang.org/grpc/stats/opentelemetry v0.0.0-20241028142157-ada6787961b3 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 )
