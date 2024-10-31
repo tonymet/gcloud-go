@@ -36,7 +36,7 @@ func Test_shaFiles(t *testing.T) {
 	}{
 		{
 			"test1",
-			args{"../test-outout-small", "/tmp/kaka"},
+			args{"../test-output-small", "/tmp/kaka"},
 			false,
 		},
 		// TODO: Add test cases.

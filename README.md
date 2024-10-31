@@ -89,7 +89,7 @@ usage: ./gcloud-go COMMAND [options]
   -connections int
         number of connections (default 8)
   -cred string
-        path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTAILS by default. Within GCP, metadata server will be used
+        path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTIALS by default. Within GCP, metadata server will be used
   -site string
         Name of site (not project) (default "default")
   -source string

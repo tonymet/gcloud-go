@@ -70,7 +70,7 @@ func RestUploadFileList(client *http.Client, versionId string, manifestSet []Ver
 		if len(manifest.UploadRequiredHashes) == 0 {
 			continue
 		}
-		// worker to upload files.  non-blocking because bufferred channel
+		// worker to upload files.  non-blocking because buffered channel
 		httpWorker := func(jobs <-chan string, results chan<- error) {
 			for shaHash := range jobs {
 				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {

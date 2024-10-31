@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"main/rest"
 	"os"
+
 	_ "golang.org/x/crypto/x509roots/fallback"
 )
 
@@ -25,7 +26,7 @@ func init() {
 	cmdDeploy = flag.NewFlagSet("deploy", flag.ExitOnError)
 	flagTemp = cmdDeploy.String("temp", os.TempDir(), "temp directory for staging files prior to upload")
 	flagCred = cmdDeploy.String("cred", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"),
-		"path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTAILS by default. "+
+		"path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTIALS by default. "+
 			"Within GCP, metadata server will be used")
 	rest.FlagConn = cmdDeploy.Int("connections", 8, "number of connections")
 	flagSource = cmdDeploy.String("source", "content", "Source directory for content")
