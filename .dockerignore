@@ -5,3 +5,5 @@
 !fs
 !go.mod
 !go.sum
+!github-release.sh
+!Makefile
