@@ -40,7 +40,7 @@ func StorageDownload(creds *google.Credentials, bucket string, prefix string, ta
 		handle *storage.ObjectHandle
 	}
 	ctx := context.Background()
-	if client, err := storage.NewClient(ctx, option.WithCredentials(creds)); err != nil {
+	if client, err := storage.NewClient(ctx, option.WithCredentials(creds), storage.WithJSONReads()); err != nil {
 		return err
 	} else {
 		imageWorker := func(jobs <-chan objBundle, results chan<- error) {
@@ -58,6 +58,7 @@ func StorageDownload(creds *google.Credentials, bucket string, prefix string, ta
 				} else if _, err := io.Copy(outF, objReader); err != nil {
 					results <- err
 				} else {
+					objReader.Close()
 					outF.Close()
 					results <- nil
 					log.Printf("downloaded: %s\n", j.attrs.Name)
