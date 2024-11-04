@@ -16,7 +16,9 @@ func Test_processDir(t *testing.T) {
 		return nil
 	}
 
-	filepath.Walk("../test-output-small", myWalk)
+	if err := filepath.Walk("../test-output-small", myWalk); err != nil {
+		panic(err)
+	}
 	if countTest != 462 {
 		t.Logf("expect: 462, got %d\n", countTest)
 		t.Fail()

@@ -9,3 +9,15 @@ build/gcloud-go.tgz:build/bin/gcloud-go
 
 clean:
 	rm -rf build/*
+
+test-lite:
+	go test ./...
+
+test-full:test-lite
+	go vet
+	staticcheck
+	golangci-lint run ./...
+	govulncheck .
+
+test-sec: 
+	gosec ./...;

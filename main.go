@@ -49,8 +49,9 @@ func main() {
 	}
 	switch os.Args[1] {
 	case "deploy":
-		cmdDeploy.Parse(os.Args[2:])
-		if client, _, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
+		if err := cmdDeploy.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		} else if client, _, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
 			panic(err)
 		} else if cwd, err := os.Getwd(); err != nil {
 			panic(err)
@@ -78,15 +79,16 @@ func main() {
 			_ = statusVersionCreate
 		}
 	case "storage":
-		cmdStorage.Parse(os.Args[2:])
-		if cmdStorage.NFlag() != 3 {
+		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		} else if cmdStorage.NFlag() != 3 {
 			usage()
 			os.Exit(2)
 		}
 		if _, credsPackage, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
 			panic(err)
-		} else {
-			rest.StorageDownload(credsPackage.GoogleCredentials, *flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages)
+		} else if err := rest.StorageDownload(credsPackage.GoogleCredentials, *flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
+			panic(err)
 		}
 	default:
 		usage()

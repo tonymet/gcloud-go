@@ -36,7 +36,9 @@ func ShaFiles(wg *sync.WaitGroup, dirname, tempDir string) (<-chan ShaRec, error
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		filepath.Walk(dirname, shaProcess)
+		if err := filepath.Walk(dirname, shaProcess); err != nil {
+			panic(err)
+		}
 		close(shaChannel)
 	}()
 	return shaChannel, nil

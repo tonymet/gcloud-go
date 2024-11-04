@@ -82,7 +82,9 @@ func StorageDownload(creds *google.Credentials, bucket string, prefix string, ta
 			}
 		}()
 		q := storage.Query{Prefix: prefix}
-		q.SetAttrSelection([]string{"Name", "Content-Type"})
+		if err := q.SetAttrSelection([]string{"Name", "Content-Type"}); err != nil {
+			panic(err)
+		}
 		it := client.Bucket(bucket).Objects(ctx, &q)
 		for attrs, err := it.Next(); err != iterator.Done; attrs, err = it.Next() {
 			if err != nil {
