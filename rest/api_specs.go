@@ -69,3 +69,11 @@ type ReleasesCreateReturn struct {
 	Type        string    `json:"type"`
 	ReleaseTime time.Time `json:"releaseTime"`
 }
+
+type ResponseMessage struct {
+	Error struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error"`
+}

@@ -17,17 +17,14 @@ const (
 )
 
 var (
-	flagSource, flagTemp, flagCred, flagSite *string
-	flagBucket, flagPrefix, flagTarget       *string
-	cmdDeploy, cmdStorage                    *flag.FlagSet
+	flagSource, flagTemp, flagSite     *string
+	flagBucket, flagPrefix, flagTarget *string
+	cmdDeploy, cmdStorage              *flag.FlagSet
 )
 
 func init() {
 	cmdDeploy = flag.NewFlagSet("deploy", flag.ExitOnError)
 	flagTemp = cmdDeploy.String("temp", os.TempDir(), "temp directory for staging files prior to upload")
-	flagCred = cmdDeploy.String("cred", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"),
-		"path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTIALS by default. "+
-			"Within GCP, metadata server will be used")
 	rest.FlagConn = cmdDeploy.Int("connections", 8, "number of connections")
 	flagSource = cmdDeploy.String("source", "content", "Source directory for content")
 	flagSite = cmdDeploy.String("site", "default", "Name of site (not project)")
@@ -51,7 +48,7 @@ func main() {
 	case "deploy":
 		if err := cmdDeploy.Parse(os.Args[2:]); err != nil {
 			panic(err)
-		} else if client, _, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
+		} else if client, _, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
 		} else if cwd, err := os.Getwd(); err != nil {
 			panic(err)
@@ -85,7 +82,7 @@ func main() {
 			usage()
 			os.Exit(2)
 		}
-		if _, credsPackage, err := rest.AuthorizeClientDefault(context.Background(), *flagCred); err != nil {
+		if _, credsPackage, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
 		} else if err := rest.StorageDownload(credsPackage.GoogleCredentials, *flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
 			panic(err)
