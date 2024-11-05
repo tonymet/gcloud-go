@@ -56,6 +56,7 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 		Scopes: []string{
 			"https://www.googleapis.com/auth/firebase",
 			"https://www.googleapis.com/auth/firebase.readonly",
+			"https://www.googleapis.com/auth/devstorage.read_only",
 		},
 	}); err != nil {
 		panic(err)

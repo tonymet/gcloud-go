@@ -83,7 +83,7 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 			}
 		}()
 		q := storage.Query{Prefix: prefix}
-		if err := q.SetAttrSelection([]string{"Name", "Content-Type"}); err != nil {
+		if err := q.SetAttrSelection([]string{"Name", "ContentType"}); err != nil {
 			panic(err)
 		}
 		bucketHandle := sClient.Bucket(bucket)

@@ -17,7 +17,11 @@ test-full:test-lite
 	go vet
 	staticcheck
 	golangci-lint run ./...
-	govulncheck .
 
 test-sec: 
+	govulncheck .
 	gosec ./...;
+
+test-e2e:
+	go run . deploy -source ${SOURCE} -site ${FIREBASE_SITE}
+	go run . storage -bucket ${BUCKET} -prefix ${PREFIX} -target  ${TARGET}

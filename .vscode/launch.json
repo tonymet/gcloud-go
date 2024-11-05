@@ -13,17 +13,23 @@
             "env": {
                 // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
             },
-            "args": [
-                "deploy",
-                "-source",
-                "test-output-small",
-                "-site",
-                //"dev-gcloud-go-1"
-                "dev-tonym-us"
-            ]
             // "args": [
-            //     "storage"
-            // ]
+            //     "deploy",
+            //     "-source",
+            //     "test-output-small",
+            //     "-site",
+            //     //"dev-gcloud-go-1"
+            //     "dev-tonym-us"
+            // ],
+            "args": [
+                "storage",
+                "-prefix",
+                "images",
+                "-bucket",
+                "dev-tonym-us",
+                "-target",
+                "test-output-small/images2/"
+            ]
         }
     ]
 }
