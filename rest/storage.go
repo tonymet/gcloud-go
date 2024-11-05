@@ -11,7 +11,6 @@ import (
 	"log"
 
 	"cloud.google.com/go/storage"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -32,7 +31,7 @@ var StorageFilterImages = func(attrs *storage.ObjectAttrs) bool {
 	return attrs.ContentType == "image/jpeg" || attrs.ContentType == "image/png"
 }
 
-func StorageDownload(creds *google.Credentials, bucket string, prefix string, target string, filter StorageFilter) error {
+func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
 	var wgResults, wgWorkers sync.WaitGroup
 
 	type objBundle struct {
@@ -40,7 +39,9 @@ func StorageDownload(creds *google.Credentials, bucket string, prefix string, ta
 		handle *storage.ObjectHandle
 	}
 	ctx := context.Background()
-	if client, err := storage.NewClient(ctx, option.WithCredentials(creds), storage.WithJSONReads()); err != nil {
+	if sClient, err := storage.NewClient(ctx, option.WithCredentials(aClient.CredsPackage.GoogleCredentials),
+		option.WithScopes(storage.ScopeReadOnly),
+		storage.WithJSONReads()); err != nil {
 		return err
 	} else {
 		imageWorker := func(jobs <-chan objBundle, results chan<- error) {
@@ -85,12 +86,12 @@ func StorageDownload(creds *google.Credentials, bucket string, prefix string, ta
 		if err := q.SetAttrSelection([]string{"Name", "Content-Type"}); err != nil {
 			panic(err)
 		}
-		it := client.Bucket(bucket).Objects(ctx, &q)
+		it := sClient.Bucket(bucket).Objects(ctx, &q)
 		for attrs, err := it.Next(); err != iterator.Done; attrs, err = it.Next() {
 			if err != nil {
 				panic(err)
 			}
-			objHandle := client.Bucket("tonym.us").Object(attrs.Name)
+			objHandle := sClient.Bucket("tonym.us").Object(attrs.Name)
 			jobs <- objBundle{attrs, objHandle}
 		}
 		close(jobs)

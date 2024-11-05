@@ -18,8 +18,8 @@
                 "-source",
                 "test-output-small",
                 "-site",
-                "dev-gcloud-go-1"
-                //"dev-tonym-us"
+                //"dev-gcloud-go-1"
+                "dev-tonym-us"
             ]
             // "args": [
             //     "storage"

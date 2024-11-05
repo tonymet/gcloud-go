@@ -46,7 +46,12 @@ type CredsPackage struct {
 	GoogleCredentials *google.Credentials
 }
 
-func AuthorizeClientDefault(ctx context.Context) (*http.Client, CredsPackage, error) {
+type AuthorizedHTTPClient struct {
+	*http.Client
+	CredsPackage CredsPackage
+}
+
+func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) {
 	if creds, err := credentials.DetectDefault(&credentials.DetectOptions{
 		Scopes: []string{
 			"https://www.googleapis.com/auth/firebase",
@@ -59,12 +64,12 @@ func AuthorizeClientDefault(ctx context.Context) (*http.Client, CredsPackage, er
 	}); err != nil {
 		panic(err)
 	} else {
-		log.Printf("credentials authorized")
-		return client, CredsPackage{creds, oauth2adapt.Oauth2CredentialsFromAuthCredentials(creds)}, nil
+		log.Printf("credentials authorized.")
+		return &AuthorizedHTTPClient{client, CredsPackage{creds, oauth2adapt.Oauth2CredentialsFromAuthCredentials(creds)}}, nil
 	}
 }
 
-func RestUploadFileList(client *http.Client, versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) []error {
+func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) []error {
 	errorSet := make([]error, 0, len(manifestSet))
 	for _, manifest := range manifestSet {
 		if len(manifest.UploadRequiredHashes) == 0 {
@@ -75,7 +80,7 @@ func RestUploadFileList(client *http.Client, versionId string, manifestSet []Ver
 			for shaHash := range jobs {
 				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
 					results <- err
-				} else if err := RestUploadFile(client, f, shaHash, versionId); err != nil {
+				} else if err := client.RestUploadFile(f, shaHash, versionId); err != nil {
 					results <- err
 				}
 				results <- nil
@@ -106,7 +111,7 @@ func RestUploadFileList(client *http.Client, versionId string, manifestSet []Ver
 	return errorSet
 }
 
-func RestVersionSetStatus(client *http.Client, versionId string, status string) (r VersionStatusUpdateReturn, e error) {
+func (client *AuthorizedHTTPClient) RestVersionSetStatus(versionId string, status string) (r VersionStatusUpdateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + "?update_mask=status"
 	// set up shas
 	var bodyJson VersionStatusUpdateRequestBody
@@ -132,7 +137,7 @@ func RestVersionSetStatus(client *http.Client, versionId string, status string) 
 	}
 }
 
-func RestReleasesCreate(client *http.Client, site, versionId string) (r ReleasesCreateReturn, e error) {
+func (client *AuthorizedHTTPClient) RestReleasesCreate(site, versionId string) (r ReleasesCreateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/releases?versionName=" + versionId
 	// set up shas
 	if req, err := http.NewRequest(http.MethodPost, resource, nil); err != nil {
@@ -151,7 +156,7 @@ func RestReleasesCreate(client *http.Client, site, versionId string) (r Releases
 	}
 }
 
-func RestUploadFile(client *http.Client, bodyFile io.Reader, shaHash, versionId string) error {
+func (client *AuthorizedHTTPClient) RestUploadFile(bodyFile io.Reader, shaHash, versionId string) error {
 	resource := "https://upload-firebasehosting.googleapis.com/upload/" + versionId + "/files/" + shaHash
 	// set up shas
 	if req, err := http.NewRequest(http.MethodPost, resource, bodyFile); err != nil {
@@ -166,7 +171,7 @@ func RestUploadFile(client *http.Client, bodyFile io.Reader, shaHash, versionId 
 	}
 	return nil
 }
-func RestCreateVersionPopulateFiles(client *http.Client, stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
+func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
 	var wgAll sync.WaitGroup
 	// start goroutine to scan dirs
@@ -222,7 +227,7 @@ func RestCreateVersionPopulateFiles(client *http.Client, stagingDir string, vers
 	return vpfrs, nil
 }
 
-func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn, e error) {
+func (client *AuthorizedHTTPClient) RestCreateVersion(site string) (r VersionCreateReturn, e error) {
 	reqBody := ` 
 	{
              "config": {
@@ -267,16 +272,4 @@ func formatRestResponseMessage(caller string, resp *http.Response) error {
 	message, _ := readResponseMessage(resp)
 	return fmt.Errorf("error: %s: non-200 status code = %d, error.status = %s,\n\t error.message = %s ",
 		caller, resp.StatusCode, message.Error.Status, message.Error.Message)
-}
-
-func GetResource(client *http.Client, resource string) (string, error) {
-	if resp, err := client.Get(resource); err != nil {
-		return "", err
-	} else {
-		if body, err := io.ReadAll(resp.Body); err != nil {
-			return "", err
-		} else {
-			return string(body), nil
-		}
-	}
 }

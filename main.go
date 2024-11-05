@@ -48,7 +48,7 @@ func main() {
 	case "deploy":
 		if err := cmdDeploy.Parse(os.Args[2:]); err != nil {
 			panic(err)
-		} else if client, _, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+		} else if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
 		} else if cwd, err := os.Getwd(); err != nil {
 			panic(err)
@@ -56,17 +56,17 @@ func main() {
 			panic(err)
 		} else if err := os.Chdir(*flagSource); err != nil {
 			panic(err)
-		} else if statusVersionCreate, err := rest.RestCreateVersion(client, *flagSite); err != nil {
+		} else if statusVersionCreate, err := client.RestCreateVersion(*flagSite); err != nil {
 			panic(err)
 		} else if statusVersionCreate.Status != STATUS_CREATED {
 			panic("status not created")
-		} else if popFiles, err := rest.RestCreateVersionPopulateFiles(client, stagingDir, statusVersionCreate.Name); err != nil {
+		} else if popFiles, err := client.RestCreateVersionPopulateFiles(stagingDir, statusVersionCreate.Name); err != nil {
 			panic(err)
-		} else if err := rest.RestUploadFileList(client, statusVersionCreate.Name, popFiles, stagingDir); len(err) != 0 {
+		} else if err := client.RestUploadFileList(statusVersionCreate.Name, popFiles, stagingDir); len(err) != 0 {
 			panic(err)
-		} else if statusReturn, err := rest.RestVersionSetStatus(client, statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
+		} else if statusReturn, err := client.RestVersionSetStatus(statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
 			panic(err)
-		} else if statusRelease, err := rest.RestReleasesCreate(client, *flagSite, statusVersionCreate.Name); err != nil {
+		} else if statusRelease, err := client.RestReleasesCreate(*flagSite, statusVersionCreate.Name); err != nil {
 			panic(err)
 		} else if err := os.Chdir(cwd); err != nil {
 			panic(err)
@@ -82,9 +82,9 @@ func main() {
 			usage()
 			os.Exit(2)
 		}
-		if _, credsPackage, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
-		} else if err := rest.StorageDownload(credsPackage.GoogleCredentials, *flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
+		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
 			panic(err)
 		}
 	default:
