@@ -86,12 +86,13 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 		if err := q.SetAttrSelection([]string{"Name", "Content-Type"}); err != nil {
 			panic(err)
 		}
-		it := sClient.Bucket(bucket).Objects(ctx, &q)
+		bucketHandle := sClient.Bucket(bucket)
+		it := bucketHandle.Objects(ctx, &q)
 		for attrs, err := it.Next(); err != iterator.Done; attrs, err = it.Next() {
 			if err != nil {
 				panic(err)
 			}
-			objHandle := sClient.Bucket("tonym.us").Object(attrs.Name)
+			objHandle := bucketHandle.Object(attrs.Name)
 			jobs <- objBundle{attrs, objHandle}
 		}
 		close(jobs)
