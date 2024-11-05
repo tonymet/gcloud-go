@@ -11,14 +11,15 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {
-                // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-311af670bc42.json"
+                // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
             },
             "args": [
                 "deploy",
                 "-source",
-                "../isgithubipv6.lol/public",
+                "test-output-small",
                 "-site",
-                "dev-isgithubipv6"
+                "dev-gcloud-go-1"
+                //"dev-tonym-us"
             ]
             // "args": [
             //     "storage"

@@ -29,7 +29,12 @@ time requirements, gcloud-go will avoid unnecessary resources
 ## Authenticating
 1. Be sure to have a service account and the Firebase Hosting API enabled in your GCP Project.  [See the docs](https://firebase.google.com/docs/hosting/api-deploy)
 2. Within GCP, the Metadata service will be used. Make sure your VM , Container, etc has the appropriate service account attached with privileges for Firebase hosting API (see above)
-3. Outside GCP, you will need a service account key . $GOOGLE_APPLICATION_CREDENTIALS env var should reference that key.  See the docs above for generating a service account key.
+3. Outside GCP, use a service account & impersonation to run the utility as a service account while logged in as a priviledged user. See *Impersonating A Service Account* . 
+
+[Google Docs on Application Default
+Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
+explains the environment variables & configuration files that are used to find
+credentials
 
 
 ## Installation
@@ -56,11 +61,11 @@ $ docker run -v $(pwd)/test-output-small:/content \
     gcloud-go deploy -source /content -site $SITE_NAME
 
 
-# run outside GCE with credentaial key json
-$ docker run -v$HOME/public:/content -v$(pwd):/src \
-us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go \
-    deploy -source /content -cred /src/service-ident-3xxxc42.json \
-    -site $SITE_NAME;
+# run outside GCE with APPL
+$ docker run -eGOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
+      -v$HOME/public:/content -v$(pwd):/src \
+      us-west1-docker.pkg.dev/tonym-us/gcloud-lite/gcloud-go \
+      deploy -source /content -site $SITE_NAME;
 ```
 
 ### Example Build
@@ -88,8 +93,6 @@ usage: ./gcloud-go COMMAND [options]
  deploy:
   -connections int
         number of connections (default 8)
-  -cred string
-        path to service principal. Use ENV var GOOGLE_APPLICATION_CREDENTIALS by default. Within GCP, metadata server will be used
   -site string
         Name of site (not project) (default "default")
   -source string
@@ -114,6 +117,17 @@ storage:
 $ make bin
 mkdir -p build/bin
 go build -o build/bin/gcloud-go -ldflags="-extldflags=-static" .
+```
+
+### Impersonating a Service Account
+It's preferred to always run the utility as a service account.  To avoid risky service key creation, you can use *impersonation*
+This will log in as a priviledged user, but authorize the utility as a service account. The temporary credential will
+be written to `$HOME/.config/gcloud/application_default_credentials.json `
+e.g.
+
+```
+PROJECT=your-project-1234
+gcloud auth application-default login --impersonate-service-account  dev-gcloud-go@${PROJECT}.iam.gserviceaccount.com     
 ```
 
 ## Related Projects

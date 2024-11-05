@@ -46,7 +46,7 @@ type CredsPackage struct {
 	GoogleCredentials *google.Credentials
 }
 
-func AuthorizeClientDefault(ctx context.Context, flagCred string) (*http.Client, CredsPackage, error) {
+func AuthorizeClientDefault(ctx context.Context) (*http.Client, CredsPackage, error) {
 	if creds, err := credentials.DetectDefault(&credentials.DetectOptions{
 		Scopes: []string{
 			"https://www.googleapis.com/auth/firebase",
@@ -120,7 +120,7 @@ func RestVersionSetStatus(client *http.Client, versionId string, status string) 
 		if res, err := client.Do(req); err != nil {
 			panic(err)
 		} else if res.StatusCode < 200 || res.StatusCode > 299 {
-			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+			panic(formatRestResponseMessage("RestVersionSetStatus", res))
 		} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
 			panic(err)
 		} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
@@ -140,7 +140,7 @@ func RestReleasesCreate(client *http.Client, site, versionId string) (r Releases
 	} else if res, err := client.Do(req); err != nil {
 		panic(err)
 	} else if res.StatusCode < 200 || res.StatusCode > 299 {
-		panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+		panic(formatRestResponseMessage("RestReleasesCreate", res))
 	} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
 		panic(err)
 	} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
@@ -161,7 +161,7 @@ func RestUploadFile(client *http.Client, bodyFile io.Reader, shaHash, versionId 
 		if res, err := client.Do(req); err != nil {
 			panic(err)
 		} else if res.StatusCode < 200 || res.StatusCode > 299 {
-			panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+			panic(formatRestResponseMessage("RestUploadFile", res))
 		}
 	}
 	return nil
@@ -203,7 +203,7 @@ func RestCreateVersionPopulateFiles(client *http.Client, stagingDir string, vers
 				if res, err := client.Do(req); err != nil {
 					panic(err)
 				} else if res.StatusCode < 200 || res.StatusCode > 299 {
-					panic(fmt.Sprintf("http error: status = %s, resource = %s\n", res.Status, res.Request.URL))
+					panic(formatRestResponseMessage("RestCreateVersionPopulateFiles", res))
 				} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
 					panic(err)
 				} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
@@ -241,7 +241,8 @@ func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn,
 	} else if resp, err := client.Do(req); err != nil {
 		return VersionCreateReturn{}, err
 	} else if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return VersionCreateReturn{}, fmt.Errorf("error: RestCreateVersion: non-200 status code = %d ", resp.StatusCode)
+		return VersionCreateReturn{},
+			formatRestResponseMessage("RestCreateVersion", resp)
 	} else if body, err := io.ReadAll(resp.Body); err != nil {
 		return VersionCreateReturn{}, err
 	} else if err := json.Unmarshal(body, &r); err != nil {
@@ -249,6 +250,23 @@ func RestCreateVersion(client *http.Client, site string) (r VersionCreateReturn,
 	}
 	log.Printf("version created: id = %s", r.Name)
 	return r, nil
+}
+
+func readResponseMessage(resp *http.Response) (ResponseMessage, error) {
+	var r ResponseMessage
+	if bodyBytes, err := io.ReadAll(resp.Body); err != nil {
+		return r, err
+
+	} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
+		return r, err
+	}
+	return r, nil
+}
+
+func formatRestResponseMessage(caller string, resp *http.Response) error {
+	message, _ := readResponseMessage(resp)
+	return fmt.Errorf("error: %s: non-200 status code = %d, error.status = %s,\n\t error.message = %s ",
+		caller, resp.StatusCode, message.Error.Status, message.Error.Message)
 }
 
 func GetResource(client *http.Client, resource string) (string, error) {
