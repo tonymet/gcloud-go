@@ -4,16 +4,15 @@ go 1.23.2
 
 require (
 	cloud.google.com/go/auth v0.10.0
-	cloud.google.com/go/auth/oauth2adapt v0.2.5
 	cloud.google.com/go/storage v1.46.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
-	golang.org/x/oauth2 v0.23.0
 	google.golang.org/api v0.204.0
 )
 
 require (
 	cel.dev/expr v0.18.0 // indirect
 	cloud.google.com/go v0.116.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.2 // indirect
 	cloud.google.com/go/monitoring v1.21.2 // indirect
@@ -45,6 +44,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect

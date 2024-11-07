@@ -17,8 +17,6 @@ import (
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/httptransport"
-	"cloud.google.com/go/auth/oauth2adapt"
-	"golang.org/x/oauth2/google"
 )
 
 const REST_PAGE_SIZE = 1000
@@ -39,16 +37,9 @@ type JWTConfig struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-// func Oauth2CredentialsFromAuthCredentials(creds *auth.Credentials) *google.Credentials
-
-type CredsPackage struct {
-	AuthCredentials   *auth.Credentials
-	GoogleCredentials *google.Credentials
-}
-
 type AuthorizedHTTPClient struct {
 	*http.Client
-	CredsPackage CredsPackage
+	authCredentials *auth.Credentials
 }
 
 func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) {
@@ -66,7 +57,7 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 		panic(err)
 	} else {
 		log.Printf("credentials authorized.")
-		return &AuthorizedHTTPClient{client, CredsPackage{creds, oauth2adapt.Oauth2CredentialsFromAuthCredentials(creds)}}, nil
+		return &AuthorizedHTTPClient{client, creds}, nil
 	}
 }
 

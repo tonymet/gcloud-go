@@ -39,7 +39,7 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 		handle *storage.ObjectHandle
 	}
 	ctx := context.Background()
-	if sClient, err := storage.NewClient(ctx, option.WithCredentials(aClient.CredsPackage.GoogleCredentials),
+	if sClient, err := storage.NewClient(ctx, option.WithAuthCredentials(aClient.authCredentials),
 		option.WithScopes(storage.ScopeReadOnly),
 		storage.WithJSONReads()); err != nil {
 		return err
