@@ -2,7 +2,7 @@ tonym-us*json
 main
 firebase
 gcloud-go
-.env
+.env*
 tmp
 build
 test-output*

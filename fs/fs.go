@@ -6,6 +6,7 @@ import (
 	"os"
 	ppath "path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -16,30 +17,45 @@ type ShaRec struct {
 
 type ShaList []ShaRec
 
-func ShaFiles(wg *sync.WaitGroup, dirname, tempDir string) (<-chan ShaRec, error) {
+func ShaFiles(dirname, tempDir string) (<-chan ShaRec, func(), error) {
+	type jobRequest struct {
+		outFile, inFile string
+	}
+	var wgJobs sync.WaitGroup
 	shaChannel := make(chan ShaRec)
-	shaProcess := func(path string, f fs.FileInfo, err error) error {
+	jobsChannel := make(chan jobRequest)
+	worker := func() {
+		defer wgJobs.Done()
+		for j := range jobsChannel {
+			if h, err := fbcompress.HashAndCompressFile(j.outFile, j.inFile); err != nil {
+				panic(err)
+			} else {
+				s := ShaRec{ppath.Join("/", j.inFile), fbcompress.TextSum(h), nil}
+				if err := os.Rename(j.outFile, ppath.Join(tempDir, s.Shasum)); err != nil {
+					panic(err)
+				}
+				shaChannel <- s
+			}
+		}
+	}
+	wgJobs.Add(4)
+	for i := 0; i < 4; i++ {
+		go worker()
+	}
+	shaProcess := func(path string, f fs.DirEntry, err error) error {
 		if f.IsDir() {
 			return nil
 		}
-		if h, err := fbcompress.HashAndCompressFile(ppath.Join(tempDir, f.Name()), path); err != nil {
-			panic(err)
-		} else {
-			s := ShaRec{ppath.Join("/", path), fbcompress.TextSum(h), nil}
-			if err := os.Rename(ppath.Join(tempDir, f.Name()), ppath.Join(tempDir, s.Shasum)); err != nil {
-				panic(err)
-			}
-			shaChannel <- s
-		}
+		jobsChannel <- jobRequest{ppath.Join(tempDir, strings.Replace(path, "/", "__", -1)), path}
 		return nil
 	} // walk files and update
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := filepath.Walk(dirname, shaProcess); err != nil {
+	execFunc := func() {
+		if err := filepath.WalkDir(dirname, shaProcess); err != nil {
 			panic(err)
 		}
+		close(jobsChannel)
+		wgJobs.Wait()
 		close(shaChannel)
-	}()
-	return shaChannel, nil
+	}
+	return shaChannel, execFunc, nil
 }

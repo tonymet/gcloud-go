@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GO Debug",
+            "name": "Storage",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -13,23 +13,32 @@
             "env": {
                 // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
             },
-            // "args": [
-            //     "deploy",
-            //     "-source",
-            //     "test-output-small",
-            //     "-site",
-            //     //"dev-gcloud-go-1"
-            //     "dev-tonym-us"
-            // ],
             "args": [
                 "storage",
                 "-prefix",
                 "images",
                 "-bucket",
-                "dev-tonym-us",
+                "dev-gcloud-go-1",
                 "-target",
                 "test-output-small/images2/"
             ]
+        },
+        {
+            "name": "Deploy",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "main.go",
+            "env": {
+                // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
+            },
+            "args": [
+                "deploy",
+                "-source",
+                "test-output-large",
+                "-site",
+                "dev-gcloud-go-1",
+            ],
         }
     ]
 }

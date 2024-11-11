@@ -9,21 +9,29 @@ time requirements, gcloud-go will avoid unnecessary resources
 ### Features
 * concurrent & incremental uploads. Only modified files are uploaded during release
 * uses native authentication / metadata service within the cloud
+* multi-core file hashing & compression
 * docker image and linux-amd64 binaries available (see below)
 * sync 10k files in seconds with fixed memory
 * GCS storage downloads
 
 ### In Progress
-* multi-core file signing & compression
 * google cloud pub/sub support for triggering builds
 
-
 ## Compared to Firebase-tools
+
+#### Size Comparison 
 
 | docker image  | size   | savings  |  
 |---|---|---|
 | firebase-tools  | 245mb  | n/a   |   
 |  gcloud-go | 19mb  |  92%  |   
+
+#### Speed Comparison
+
+| docker image  | deploy time for 7500 files   | savings  |  
+|---|---|---|
+| firebase-tools  | 16.5s  | n/a   |   
+|  gcloud-go | 8.8s |  45%  |   
 
 
 ## Authenticating

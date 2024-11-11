@@ -167,54 +167,56 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir st
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
 	var wgAll sync.WaitGroup
 	// start goroutine to scan dirs
-	shas, _ := fs.ShaFiles(&wgAll, "./", stagingDir)
-	// goroutine to send requests
+	shas, scanFunc, _ := fs.ShaFiles("./", stagingDir)
+	// start directory scan
 	wgAll.Add(1)
 	go func() {
 		defer wgAll.Done()
-		// set up shas
-		vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
-		lastPage := false
-		// loop over pages/ size = 1000
-		for {
-			var (
-				bodyJson VersionPopulateFilesRequestBody
-				r        VersionPopulateFilesReturn
-			)
-			bodyJson.Files = make(map[string]string)
-			for i := 0; i < REST_PAGE_SIZE; i++ {
-				if s, ok := <-shas; !ok {
-					lastPage = true
-					break
-				} else {
-					bodyJson.Files[s.RelPath] = s.Shasum
-				}
-			}
-			// send api call
-			if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
-				panic(err)
-			} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
-				panic(err)
+		scanFunc()
+	}()
+	// goroutine to send requests
+	// set up shas
+	vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
+	lastPage := false
+	// loop over pages/ size = 1000
+	for {
+		var (
+			bodyJson VersionPopulateFilesRequestBody
+			r        VersionPopulateFilesReturn
+		)
+		bodyJson.Files = make(map[string]string)
+		for i := 0; i < REST_PAGE_SIZE; i++ {
+			if s, ok := <-shas; !ok {
+				lastPage = true
+				break
 			} else {
-				req.Header.Add("Content-Type", "application/json")
-				if res, err := client.Do(req); err != nil {
-					panic(err)
-				} else if res.StatusCode < 200 || res.StatusCode > 299 {
-					panic(formatRestResponseMessage("RestCreateVersionPopulateFiles", res))
-				} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
-					panic(err)
-				} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
-					panic(err)
-				} else {
-					log.Printf("files populated: %d files ", len(bodyJson.Files))
-					vpfrs = append(vpfrs, r)
-				}
-				if lastPage {
-					break
-				}
+				bodyJson.Files[s.RelPath] = s.Shasum
 			}
 		}
-	}()
+		// send api call
+		if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
+			panic(err)
+		} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
+			panic(err)
+		} else {
+			req.Header.Add("Content-Type", "application/json")
+			if res, err := client.Do(req); err != nil {
+				panic(err)
+			} else if res.StatusCode < 200 || res.StatusCode > 299 {
+				panic(formatRestResponseMessage("RestCreateVersionPopulateFiles", res))
+			} else if bodyBytes, err := io.ReadAll(res.Body); err != nil {
+				panic(err)
+			} else if err := json.Unmarshal(bodyBytes, &r); err != nil {
+				panic(err)
+			} else {
+				log.Printf("files populated: %d files ", len(bodyJson.Files))
+				vpfrs = append(vpfrs, r)
+			}
+			if lastPage {
+				break
+			}
+		}
+	}
 	wgAll.Wait()
 	return vpfrs, nil
 }
