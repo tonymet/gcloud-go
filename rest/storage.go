@@ -28,7 +28,7 @@ func conditionalMkdir(path string) error {
 type StorageFilter func(attrs *storage.ObjectAttrs) bool
 
 var StorageFilterImages = func(attrs *storage.ObjectAttrs) bool {
-	return attrs.ContentType == "image/jpeg" || attrs.ContentType == "image/png"
+	return attrs.ContentType == "image/jpeg" || attrs.ContentType == "image/png" || attrs.ContentType == "image/svg+xml"
 }
 
 func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
