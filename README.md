@@ -46,6 +46,8 @@ credentials
 
 
 ## Installation
+
+### Install From Binary
 See [releases page for the latest builds](https://github.com/tonymet/gcloud-go/releases)
 
 To install inside your terminal, download and copy to your path.
@@ -56,6 +58,11 @@ $ curl -LO https://github.com/tonymet/gcloud-go/releases/download/2024-10-18-d5d
 $ tar -zxf *tar.gz
 # run the binary
 $ ./gcloud-go
+```
+
+### Install From Source
+```
+$ go install github.com/tonymet/gcloud-go/cmd/gcloud-go
 ```
 
 

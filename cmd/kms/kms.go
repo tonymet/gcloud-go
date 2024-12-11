@@ -16,7 +16,7 @@ var (
 func init() {
 	flag.StringVar(&filename, "f", "", "path \"message\" file")
 	flag.StringVar(&output, "o", "", "output path for sig")
-	flag.StringVar(&keypath, "k", kms.Name, "full path to key ID (including version)")
+	flag.StringVar(&keypath, "k", "", "full path to key ID (including version)")
 }
 
 func main() {
