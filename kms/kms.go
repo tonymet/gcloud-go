@@ -15,10 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var (
-	Name = "projects/dev-tonym-us/locations/us-west1/keyRings/test-software-signing/cryptoKeys/cloud-lite-signing/cryptoKeyVersions/1"
-)
-
 func SignAsymmetric(w io.Writer, name string, message io.Reader) error {
 	ctx := context.Background()
 	creds, err := credentials.DetectDefault(
