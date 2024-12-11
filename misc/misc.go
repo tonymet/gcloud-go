@@ -1,11 +1,13 @@
 package misc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -15,6 +17,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v67/github"
+	"github.com/tonymet/gcloud-go/kms"
 	_ "golang.org/x/crypto/x509roots/fallback"
 	"google.golang.org/api/iterator"
 )
@@ -175,7 +178,7 @@ func GetActiveVersion(bucket, object string) string {
 	return IncrementVersion(GetObjectContents(bucket, object))
 }
 
-func GithubRelease(args GithubArgs) {
+func GithubRelease(args GithubArgs) error {
 	owner, repo, file, commit := args.Owner, args.Repo, args.File, args.Commit
 	var tagValue string
 	if args.Tag != "" {
@@ -201,14 +204,50 @@ func GithubRelease(args GithubArgs) {
 		panic(err)
 	} else if asset, _, err := client.Repositories.UploadReleaseAsset(ctx, owner, repo, *repoObj.ID, &github.UploadOptions{Name: path.Base(file)}, fileHandle); err != nil {
 		panic(err)
+		// check options and sign
+
 	} else {
 		logErr("release ID: %+d\n", repoObj.ID)
 		logErr("asset ID: %+x\n", asset.ID)
+		if args.KeyPath != "" {
+			var outWriter bytes.Buffer
+			fileHandle.Seek(0, 0)
+			err := kms.SignAsymmetric(&outWriter, args.KeyPath, fileHandle)
+			if err != nil {
+				return err
+			}
+			var query = make(url.Values)
+			query["Name"] = []string{path.Base(file) + ".sig"}
+			assetSig, _, err := githubUploadReleaseAsset(ctx, client, owner, repo, *repoObj.ID, query, &outWriter, outWriter.Len(), "application/binary")
+			if err != nil {
+				return err
+			}
+			logErr("sig asset ID: %+x\n", assetSig.ID)
+			// generate sig and write to file
+		}
 	}
+	return nil
+}
+
+func githubUploadReleaseAsset(ctx context.Context, c *github.Client, owner, repo string, id int64, query url.Values, file io.Reader, contentLength int, mediaType string) (*github.ReleaseAsset, *github.Response, error) {
+	u := fmt.Sprintf("repos/%s/%s/releases/%d/assets", owner, repo, id)
+	// add url encoding
+	u = u + query.Encode()
+	req, err := c.NewUploadRequest(u, file, int64(contentLength), mediaType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	asset := new(github.ReleaseAsset)
+	resp, err := c.Do(ctx, req, asset)
+	if err != nil {
+		return nil, resp, err
+	}
+	return asset, resp, nil
 }
 
 type GithubArgs struct {
-	Owner, Repo, Commit, File, Tag string
+	Owner, Repo, Commit, File, Tag, KeyPath, SignatureFile string
 }
 type KMSArgs struct {
 	Filename, Output, Keypath string
