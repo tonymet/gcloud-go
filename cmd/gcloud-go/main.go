@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"main/rest"
+	"github.com/tonymet/gcloud-go/rest"
 	"os"
 
 	_ "golang.org/x/crypto/x509roots/fallback"

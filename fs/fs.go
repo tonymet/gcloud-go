@@ -2,12 +2,13 @@ package fs
 
 import (
 	"io/fs"
-	fbcompress "main/compress"
 	"os"
 	ppath "path"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	fbcompress "github.com/tonymet/gcloud-go/compress"
 )
 
 type ShaRec struct {

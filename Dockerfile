@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o build/bin/gcloud-go -ldflags="-w -extldflags=-static" .
+RUN go build -o build/bin/gcloud-go -ldflags="-w -extldflags=-static" ./cmd/gcloud-go
 FROM scratch
 # Copy binary from build step
 VOLUME /tmp
