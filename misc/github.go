@@ -1,32 +1,104 @@
 package misc
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/google/go-github/v67/github"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 )
 
-func githubUploadReleaseAsset(ctx context.Context, c *github.Client, owner, repo string, id int64, query url.Values, file io.Reader, contentLength int, mediaType string) (*github.ReleaseAsset, *github.Response, error) {
-	u := fmt.Sprintf("repos/%s/%s/releases/%d/assets", owner, repo, id)
-	// add url encoding
-	u = u + "?" + query.Encode()
-	modRequest := func(req *http.Request) {
-		//req.PostForm.Add("Name", query.Get("Name"))
+type ReleaseAsset struct {
+	URL                string    `json:"url"`
+	BrowserDownloadURL string    `json:"browser_download_url"`
+	ID                 int       `json:"id"`
+	NodeID             string    `json:"node_id"`
+	Name               string    `json:"name"`
+	Label              string    `json:"label"`
+	State              string    `json:"state"`
+	ContentType        string    `json:"content_type"`
+	Size               int       `json:"size"`
+	DownloadCount      int       `json:"download_count"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	Uploader           struct {
+		Login             string `json:"login"`
+		ID                int    `json:"id"`
+		NodeID            string `json:"node_id"`
+		AvatarURL         string `json:"avatar_url"`
+		GravatarID        string `json:"gravatar_id"`
+		URL               string `json:"url"`
+		HTMLURL           string `json:"html_url"`
+		FollowersURL      string `json:"followers_url"`
+		FollowingURL      string `json:"following_url"`
+		GistsURL          string `json:"gists_url"`
+		StarredURL        string `json:"starred_url"`
+		SubscriptionsURL  string `json:"subscriptions_url"`
+		OrganizationsURL  string `json:"organizations_url"`
+		ReposURL          string `json:"repos_url"`
+		EventsURL         string `json:"events_url"`
+		ReceivedEventsURL string `json:"received_events_url"`
+		Type              string `json:"type"`
+		SiteAdmin         bool   `json:"site_admin"`
+	} `json:"uploader"`
+}
+
+type GithubTransport struct {
+	T http.RoundTripper
+}
+
+func (adt *GithubTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("Authorization", "Bearer "+os.Getenv("GH_TOKEN"))
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	return adt.T.RoundTrip(req)
+}
+
+func getClient() *http.Client {
+	return &http.Client{Transport: &GithubTransport{T: http.DefaultTransport}}
+}
+
+func ReleaseAssetResponse(res *http.Response) (*ReleaseAsset, error) {
+	bodyBuffer, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
 	}
-	req, err := c.NewUploadRequest(u, file, int64(contentLength), mediaType, modRequest)
+	var asset ReleaseAsset
+	err = json.Unmarshal(bodyBuffer, &asset)
+	if err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+
+func githubUploadReleaseAsset(owner,
+	repo string, id int64, filename string, file io.Reader,
+	contentLength int64, mediaType string) (*ReleaseAsset, *http.Response, error) {
+	u := fmt.Sprintf("https://uploads.github.com/repos/%s/%s/releases/%d/assets", owner, repo, id)
+	client := getClient()
+	var query = make(url.Values)
+	query["name"] = []string{filename}
+	u = u + "?" + query.Encode()
+	req, err := http.NewRequest("POST", u, file)
+	req.ContentLength = contentLength
+	req.Header.Add("Content-type", mediaType)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	asset := new(github.ReleaseAsset)
-	resp, err := c.Do(ctx, req, asset)
+	res, err := client.Do(req)
 	if err != nil {
-		return nil, resp, err
+		return nil, nil, err
 	}
-	return asset, resp, nil
+	asset, err := ReleaseAssetResponse(res)
+	if err != nil {
+		return nil, nil, err
+	}
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return nil, nil, fmt.Errorf("error: Status Code: %d", res.StatusCode)
+	}
+	return asset, res, nil
 }
 
 type GithubArgs struct {

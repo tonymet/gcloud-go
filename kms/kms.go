@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"hash"
 	"hash/crc32"
 	"io"
 
@@ -15,26 +16,30 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func SignAsymmetric(w io.Writer, name string, message io.Reader) error {
-	ctx := context.Background()
+func getClient(ctx context.Context) (*kms.KeyManagementClient, error) {
 	creds, err := credentials.DetectDefault(
 		&credentials.DetectOptions{
 			Scopes: []string{"https://www.googleapis.com/auth/cloudkms"},
 		},
 	)
 	if err != nil {
-		return err
+		return &kms.KeyManagementClient{}, err
 	}
 	client, err := kms.NewKeyManagementClient(ctx, option.WithAuthCredentials(creds))
+	if err != nil {
+		return &kms.KeyManagementClient{}, fmt.Errorf("failed to create kms client: %w", err)
+	}
+	return client, nil
+}
+
+// sign a digest instead of the message. Useful when you need to hash
+// the digest before signing
+func SignAsymmetricDigest(ctx context.Context, w io.Writer, name string, digest hash.Hash) error {
+	client, err := getClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create kms client: %w", err)
 	}
 	defer client.Close()
-	digest := sha256.New()
-	_, err = io.Copy(digest, message)
-	if err != nil {
-		return fmt.Errorf("failed to create digest: %w", err)
-	}
 	// Optional but recommended: Compute digest's CRC32C.
 	crc32c := func(data []byte) uint32 {
 		t := crc32.MakeTable(crc32.Castagnoli)
@@ -65,4 +70,15 @@ func SignAsymmetric(w io.Writer, name string, message io.Reader) error {
 		return err
 	}
 	return nil
+
+}
+
+func SignAsymmetric(w io.Writer, name string, message io.Reader) error {
+	ctx := context.Background()
+	digest := sha256.New()
+	_, err := io.Copy(digest, message)
+	if err != nil {
+		return fmt.Errorf("failed to create digest: %w", err)
+	}
+	return SignAsymmetricDigest(ctx, w, name, digest)
 }

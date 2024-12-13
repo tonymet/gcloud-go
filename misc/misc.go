@@ -3,11 +3,12 @@ package misc
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net/url"
+	"mime"
 	"os"
 	"path"
 	"strconv"
@@ -21,6 +22,10 @@ import (
 	_ "golang.org/x/crypto/x509roots/fallback"
 	"google.golang.org/api/iterator"
 )
+
+func init() {
+	mime.AddExtensionType(".sig", "application/octet-stream")
+}
 
 func logErr(format string, params ...any) {
 	if len(params) > 0 {
@@ -202,27 +207,29 @@ func GithubRelease(args GithubArgs) error {
 		panic(err)
 	} else if fileHandle, err := os.Open(file); err != nil {
 		panic(err)
-	} else if asset, _, err := client.Repositories.UploadReleaseAsset(ctx, owner, repo, *repoObj.ID, &github.UploadOptions{Name: path.Base(file)}, fileHandle); err != nil {
-		panic(err)
-		// check options and sign
-
 	} else {
+		fInfo, err := fileHandle.Stat()
+		if err != nil {
+			panic(err)
+		}
+		digest := sha256.New()
+		tReader := io.TeeReader(fileHandle, digest)
+		filename := path.Base(file)
+		ext := path.Ext(filename)
+		asset, _, err := githubUploadReleaseAsset(owner, repo, *repoObj.ID, filename, tReader, fInfo.Size(), mime.TypeByExtension(ext))
+		if err != nil {
+			panic(err)
+		}
+		fileHandle.Close()
 		logErr("release ID: %+d\n", repoObj.ID)
 		logErr("asset ID: %+x\n", asset.ID)
 		if args.KeyPath != "" {
 			var outWriter bytes.Buffer
-			fileHandle2, err := os.Open(file)
-			if err != nil {
-				panic(err)
-			}
-			err = kms.SignAsymmetric(&outWriter, args.KeyPath, fileHandle2)
+			err = kms.SignAsymmetricDigest(ctx, &outWriter, args.KeyPath, digest)
 			if err != nil {
 				return err
 			}
-			var query = make(url.Values)
-			query["name"] = []string{path.Base(file) + ".sig"}
-			//assetSig, _, err := client.Repositories.UploadReleaseAsset(ctx, owner, repo, *repoObj.ID, &github.UploadOptions{Name: path.Base(file) + ".sig"}, fileHandle2)
-			assetSig, _, err := githubUploadReleaseAsset(ctx, client, owner, repo, *repoObj.ID, query, &outWriter, outWriter.Len(), "application/binary")
+			assetSig, _, err := githubUploadReleaseAsset(owner, repo, *repoObj.ID, filename+".sig", &outWriter, int64(outWriter.Len()), mime.TypeByExtension(".sig"))
 			if err != nil {
 				return err
 			}
