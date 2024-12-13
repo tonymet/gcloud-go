@@ -37,11 +37,14 @@ type JWTConfig struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
+// an http client with
+// oauth2 credentials attached
 type AuthorizedHTTPClient struct {
 	*http.Client
 	authCredentials *auth.Credentials
 }
 
+// use ADC creds to authorize the default client
 func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) {
 	if creds, err := credentials.DetectDefault(&credentials.DetectOptions{
 		Scopes: []string{
@@ -61,6 +64,7 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 	}
 }
 
+// rest call to upload file list to firebase
 func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) []error {
 	errorSet := make([]error, 0, len(manifestSet))
 	for _, manifest := range manifestSet {
@@ -103,6 +107,7 @@ func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifes
 	return errorSet
 }
 
+// rest set status to published
 func (client *AuthorizedHTTPClient) RestVersionSetStatus(versionId string, status string) (r VersionStatusUpdateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + "?update_mask=status"
 	// set up shas
@@ -129,6 +134,7 @@ func (client *AuthorizedHTTPClient) RestVersionSetStatus(versionId string, statu
 	}
 }
 
+// rest call create new release on firebase sites
 func (client *AuthorizedHTTPClient) RestReleasesCreate(site, versionId string) (r ReleasesCreateReturn, e error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/releases?versionName=" + versionId
 	// set up shas
@@ -148,6 +154,7 @@ func (client *AuthorizedHTTPClient) RestReleasesCreate(site, versionId string) (
 	}
 }
 
+// rest call to upload file contents
 func (client *AuthorizedHTTPClient) RestUploadFile(bodyFile io.Reader, shaHash, versionId string) error {
 	resource := "https://upload-firebasehosting.googleapis.com/upload/" + versionId + "/files/" + shaHash
 	// set up shas
@@ -163,6 +170,8 @@ func (client *AuthorizedHTTPClient) RestUploadFile(bodyFile io.Reader, shaHash, 
 	}
 	return nil
 }
+
+// rest populate files
 func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
 	var wgAll sync.WaitGroup
@@ -221,6 +230,7 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir st
 	return vpfrs, nil
 }
 
+// rest call to create new version on Firebase Hosting
 func (client *AuthorizedHTTPClient) RestCreateVersion(site string) (r VersionCreateReturn, e error) {
 	reqBody := ` 
 	{
@@ -251,6 +261,7 @@ func (client *AuthorizedHTTPClient) RestCreateVersion(site string) (r VersionCre
 	return r, nil
 }
 
+// transform http.response json to ResponseMessage struct
 func readResponseMessage(resp *http.Response) (ResponseMessage, error) {
 	var r ResponseMessage
 	if bodyBytes, err := io.ReadAll(resp.Body); err != nil {
@@ -262,6 +273,7 @@ func readResponseMessage(resp *http.Response) (ResponseMessage, error) {
 	return r, nil
 }
 
+// format error message
 func formatRestResponseMessage(caller string, resp *http.Response) error {
 	message, _ := readResponseMessage(resp)
 	return fmt.Errorf("error: %s: non-200 status code = %d, error.status = %s,\n\t error.message = %s ",

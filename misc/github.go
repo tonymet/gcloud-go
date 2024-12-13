@@ -73,6 +73,8 @@ func ReleaseAssetResponse(res *http.Response) (*ReleaseAsset, error) {
 	return &asset, nil
 }
 
+// upload release asset file to github.
+// uses io.Reader instead of os.File
 func githubUploadReleaseAsset(owner,
 	repo string, id int64, filename string, file io.Reader,
 	contentLength int64, mediaType string) (*ReleaseAsset, *http.Response, error) {

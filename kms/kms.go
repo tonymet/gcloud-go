@@ -73,6 +73,10 @@ func SignAsymmetricDigest(ctx context.Context, w io.Writer, name string, digest 
 
 }
 
+// sign the message using the
+// KMS key identified by name
+// output signature binary contents into writer
+// os.File or bytes.Buffer is recommended for writer. Any io.Writer will do
 func SignAsymmetric(w io.Writer, name string, message io.Reader) error {
 	ctx := context.Background()
 	digest := sha256.New()

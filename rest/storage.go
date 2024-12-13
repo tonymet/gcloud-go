@@ -1,3 +1,4 @@
+// GCS Google Cloud Storage API
 package rest
 
 import (
@@ -25,11 +26,14 @@ func conditionalMkdir(path string) error {
 	return nil
 }
 
+// client-side filter function
 type StorageFilter func(attrs *storage.ObjectAttrs) bool
 
 var (
 	imageContentTypes = [3]string{"image/jpeg", "image/png", "image/svg+xml"}
 )
+
+// filter only image types
 var StorageFilterImages = func(attrs *storage.ObjectAttrs) bool {
 	for _, t := range imageContentTypes {
 		if attrs.ContentType == t {
@@ -39,6 +43,7 @@ var StorageFilterImages = func(attrs *storage.ObjectAttrs) bool {
 	return false
 }
 
+// download from GCS storage bucket
 func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
 	var wgResults, wgWorkers sync.WaitGroup
 

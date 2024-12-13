@@ -1,9 +1,11 @@
+// JSON structs for Firebase Hosting API responses
 package rest
 
 import (
 	"time"
 )
 
+// create version call
 type VersionCreateReturn struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
@@ -17,15 +19,18 @@ type VersionCreateReturn struct {
 	} `json:"config"`
 }
 
+// Populate Files request
 type VersionPopulateFilesRequestBody struct {
 	Files map[string]string `json:"files"`
 }
 
+// Populate Files Response
 type VersionPopulateFilesReturn struct {
 	UploadRequiredHashes []string `json:"uploadRequiredHashes"`
 	UploadURL            string   `json:"uploadUrl"`
 }
 
+// Version Status Update Request
 type VersionStatusUpdateRequestBody struct {
 	Status string `json:"status"`
 }
