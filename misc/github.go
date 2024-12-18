@@ -45,6 +45,22 @@ type ReleaseAsset struct {
 	} `json:"uploader"`
 }
 
+type responseError struct {
+	res *http.Response
+}
+
+func (re responseError) Error() string {
+	// extract body
+	buf := make([]byte, 0, re.res.ContentLength+10)
+	bodyBuf, err := io.ReadAll(re.res.Body)
+	if err != nil {
+		return err.Error()
+	}
+	buf = append(buf, fmt.Sprintf("Error: %d\n . Body: \n", re.res.StatusCode)...)
+	buf = append(buf, bodyBuf...)
+	return string(buf)
+}
+
 type GithubTransport struct {
 	T http.RoundTripper
 }
@@ -98,7 +114,7 @@ func githubUploadReleaseAsset(owner,
 		return nil, nil, err
 	}
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, nil, fmt.Errorf("error: Status Code: %d", res.StatusCode)
+		return nil, nil, responseError{res: res}
 	}
 	return asset, res, nil
 }
