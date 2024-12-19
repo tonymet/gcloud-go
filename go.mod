@@ -7,7 +7,6 @@ require (
 	cloud.google.com/go/kms v1.20.0
 	cloud.google.com/go/pubsub v1.44.0
 	cloud.google.com/go/storage v1.46.0
-	github.com/google/go-github/v67 v67.0.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
 	google.golang.org/api v0.204.0
 	google.golang.org/protobuf v1.35.1
@@ -33,7 +32,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect

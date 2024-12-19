@@ -17,7 +17,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
-	"github.com/google/go-github/v67/github"
+	"github.com/tonymet/gcloud-go/github"
 	"github.com/tonymet/gcloud-go/kms"
 	_ "golang.org/x/crypto/x509roots/fallback"
 	"google.golang.org/api/iterator"
@@ -185,7 +185,7 @@ func GetActiveVersion(bucket, object string) string {
 	return IncrementVersion(GetObjectContents(bucket, object))
 }
 
-func GithubRelease(args GithubArgs) error {
+func GithubRelease(args github.GithubArgs) error {
 	owner, repo, file, commit := args.Owner, args.Repo, args.File, args.Commit
 	var tagValue string
 	if args.Tag != "" {
@@ -194,18 +194,18 @@ func GithubRelease(args GithubArgs) error {
 		tagValue = time.Now().Format(time.DateOnly) + "-" + commit[0:7]
 	}
 	ctx := context.Background()
-	client := github.NewClient(nil).WithAuthToken(os.Getenv("GH_TOKEN"))
-	r := &github.RepositoryRelease{
-		TagName:         &tagValue,
-		TargetCommitish: &commit,
+	r := github.CreateReleaseResponse{
+		TagName:         tagValue,
+		TargetCommitish: commit,
 	}
-	if _, res, err := client.Repositories.GetReleaseByTag(ctx, owner, repo, tagValue); res != nil && res.StatusCode == 200 {
+	gc := github.AuthorizeClient(args.Token)
+	if _, res, err := gc.GetReleaseByTag(owner, repo, tagValue); res != nil && res.StatusCode == 200 {
 		logErr("Release already exists, skipping\n")
 		os.Exit(0)
 	} else if (res != nil && res.StatusCode != 404) || (err != nil && res == nil) {
 		panic(err)
 	}
-	if repoObj, _, err := client.Repositories.CreateRelease(ctx, owner, repo, r); err != nil {
+	if repoObj, _, err := gc.GithubCreateRelease(owner, repo, r); err != nil {
 		panic(err)
 	} else if fileHandle, err := os.Open(file); err != nil {
 		panic(err)
@@ -218,7 +218,7 @@ func GithubRelease(args GithubArgs) error {
 		tReader := io.TeeReader(fileHandle, digest)
 		filename := path.Base(file)
 		ext := path.Ext(filename)
-		asset, _, err := githubUploadReleaseAsset(owner, repo, *repoObj.ID, filename, tReader, fInfo.Size(), mime.TypeByExtension(ext))
+		asset, _, err := gc.UploadReleaseAsset(owner, repo, repoObj.ID, filename, tReader, fInfo.Size(), mime.TypeByExtension(ext))
 		if err != nil {
 			panic(err)
 		}
@@ -231,7 +231,7 @@ func GithubRelease(args GithubArgs) error {
 			if err != nil {
 				return err
 			}
-			assetSig, _, err := githubUploadReleaseAsset(owner, repo, *repoObj.ID, filename+".sig", &outWriter, int64(outWriter.Len()), mime.TypeByExtension(".sig"))
+			assetSig, _, err := gc.UploadReleaseAsset(owner, repo, repoObj.ID, filename+".sig", &outWriter, int64(outWriter.Len()), mime.TypeByExtension(".sig"))
 			if err != nil {
 				return err
 			}
@@ -240,4 +240,8 @@ func GithubRelease(args GithubArgs) error {
 		}
 	}
 	return nil
+}
+
+type KMSArgs struct {
+	Filename, Output, Keypath string
 }
