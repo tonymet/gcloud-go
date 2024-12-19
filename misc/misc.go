@@ -25,6 +25,8 @@ import (
 
 func init() {
 	mime.AddExtensionType(".sig", "application/octet-stream")
+	mime.AddExtensionType(".gz", "application/x-gtar-compressed")
+	mime.AddExtensionType(".tar.gz", "application/x-gtar-compressed")
 }
 
 func logErr(format string, params ...any) {

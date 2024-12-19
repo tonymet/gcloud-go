@@ -94,6 +94,9 @@ func ReleaseAssetResponse(res *http.Response) (*ReleaseAsset, error) {
 func githubUploadReleaseAsset(owner,
 	repo string, id int64, filename string, file io.Reader,
 	contentLength int64, mediaType string) (*ReleaseAsset, *http.Response, error) {
+	if mediaType == "" {
+		panic("mediaType is unset")
+	}
 	u := fmt.Sprintf("https://uploads.github.com/repos/%s/%s/releases/%d/assets", owner, repo, id)
 	client := getClient()
 	var query = make(url.Values)
