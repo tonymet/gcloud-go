@@ -23,6 +23,10 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+var (
+	ErrReleaseExists = fmt.Errorf("release already exists")
+)
+
 func init() {
 	mime.AddExtensionType(".sig", "application/octet-stream")
 	mime.AddExtensionType(".gz", "application/x-gtar-compressed")
@@ -200,8 +204,7 @@ func GithubRelease(args github.GithubArgs) error {
 	}
 	gc := github.AuthorizeClient(args.Token)
 	if _, res, err := gc.GetReleaseByTag(owner, repo, tagValue); res != nil && res.StatusCode == 200 {
-		logErr("Release already exists, skipping\n")
-		os.Exit(0)
+		return ErrReleaseExists
 	} else if (res != nil && res.StatusCode != 404) || (err != nil && res == nil) {
 		panic(err)
 	}
