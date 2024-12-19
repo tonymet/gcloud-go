@@ -95,19 +95,23 @@ func githubUploadReleaseAsset(owner,
 	repo string, id int64, filename string, file io.Reader,
 	contentLength int64, mediaType string) (*ReleaseAsset, *http.Response, error) {
 	if mediaType == "" {
-		panic("mediaType is unset")
+		return nil, nil, fmt.Errorf("mediaType is unset")
 	}
-	u := fmt.Sprintf("https://uploads.github.com/repos/%s/%s/releases/%d/assets", owner, repo, id)
+	var q = make(url.Values)
+	q["name"] = []string{filename}
+	u := url.URL{
+		Scheme:   "https",
+		Host:     "uploads.github.com",
+		Path:     fmt.Sprintf("/repos/%s/%s/releases/%d/assets", owner, repo, id),
+		RawQuery: q.Encode(),
+	}
 	client := getClient()
-	var query = make(url.Values)
-	query["name"] = []string{filename}
-	u = u + "?" + query.Encode()
-	req, err := http.NewRequest("POST", u, file)
-	req.ContentLength = contentLength
-	req.Header.Add("Content-type", mediaType)
+	req, err := http.NewRequest("POST", u.String(), file)
 	if err != nil {
 		return nil, nil, err
 	}
+	req.ContentLength = contentLength
+	req.Header.Add("Content-type", mediaType)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
