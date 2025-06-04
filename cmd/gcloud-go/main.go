@@ -34,7 +34,7 @@ func init() {
 	flagTarget = cmdStorage.String("target", ".", "Target Directory for download")
 }
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s deploy|storage [options]\n options:\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "usage: %s deploy|storage|storage-upload [options]\n options:\n", os.Args[0])
 	cmdDeploy.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "storage:\n")
 	cmdStorage.PrintDefaults()
@@ -85,6 +85,18 @@ func main() {
 		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
 		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
+			panic(err)
+		}
+	case "storage-upload":
+		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		} else if cmdStorage.NFlag() != 3 {
+			usage()
+			os.Exit(2)
+		}
+		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+			panic(err)
+		} else if err := client.StorageUploadDirectory(*flagBucket, *flagPrefix, *flagTarget); err != nil {
 			panic(err)
 		}
 	default:

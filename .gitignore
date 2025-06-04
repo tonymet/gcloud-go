@@ -1,7 +1,6 @@
 tonym-us*json
 main
 firebase
-gcloud-go
 .env*
 tmp
 build
