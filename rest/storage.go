@@ -4,8 +4,10 @@ package rest
 import (
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	ppath "path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -114,4 +116,45 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 		wgResults.Wait()
 	}
 	return nil
+}
+
+func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, srcDir string) error {
+	ctx := context.Background()
+	if sClient, err := storage.NewClient(ctx, option.WithAuthCredentials(aClient.authCredentials),
+		option.WithScopes(storage.ScopeReadWrite),
+		storage.WithJSONReads()); err != nil {
+		return err
+	} else {
+		return filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil // Skip directories
+			}
+			// Compute the object name in GCS
+			relPath, err := filepath.Rel(srcDir, path)
+			if err != nil {
+				return err
+			}
+			objectName := filepath.ToSlash(filepath.Join(prefix, relPath))
+			// Open the file
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			// Upload to GCS
+			wc := sClient.Bucket(bucketName).Object(objectName).NewWriter(ctx)
+			if _, err := io.Copy(wc, f); err != nil {
+				wc.Close()
+				return err
+			}
+			if err := wc.Close(); err != nil {
+				return err
+			}
+			log.Printf("Uploaded %s to gs://%s/%s\n", path, bucketName, objectName)
+			return nil
+		})
+	}
 }
