@@ -87,6 +87,18 @@ func main() {
 		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
 			panic(err)
 		}
+	case "storage-upload":
+		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		} else if cmdStorage.NFlag() != 3 {
+			usage()
+			os.Exit(2)
+		}
+		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+			panic(err)
+		} else if err := client.StorageUploadDirectory(*flagBucket, *flagPrefix, *flagTarget); err != nil {
+			panic(err)
+		}
 	default:
 		usage()
 	}
