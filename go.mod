@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/pubsub v1.44.0
 	cloud.google.com/go/storage v1.46.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
+	golang.org/x/sync v0.14.0
 	google.golang.org/api v0.204.0
 	google.golang.org/protobuf v1.35.1
 )
@@ -49,7 +50,6 @@ require (
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.7.0 // indirect

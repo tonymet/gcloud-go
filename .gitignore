@@ -9,3 +9,4 @@ test-output*
 **/test1*gz
 **/test1*txt
 public
+output/**

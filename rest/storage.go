@@ -57,6 +57,7 @@ var StorageFilterAll = func(attrs *storage.ObjectAttrs) bool {
 // download from GCS storage bucket
 func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
 	var wgWorkers sync.WaitGroup
+	var throttle = NewThrottle(8)
 	ctx := context.Background()
 	if sClient, err := storage.NewClient(ctx, option.WithAuthCredentials(aClient.authCredentials),
 		option.WithScopes(storage.ScopeReadOnly),
@@ -73,10 +74,12 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 			if err != nil {
 				panic(err)
 			}
-			objHandle := bucketHandle.Object(attrs.Name)
 			wgWorkers.Add(1)
 			go func() {
 				defer wgWorkers.Done()
+				defer throttle.Done()
+				throttle.Wait()
+				objHandle := bucketHandle.Object(attrs.Name)
 				outputFileName := ppath.Join(target, attrs.Name)
 				if !filter(attrs) {
 					return
@@ -108,6 +111,7 @@ func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, 
 		return err
 	} else {
 		var wgWorker sync.WaitGroup
+		var throttle = NewThrottle(8)
 		err := filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -126,6 +130,8 @@ func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, 
 			go func() {
 				// Open the file
 				defer wgWorker.Done()
+				defer throttle.Done()
+				throttle.Wait()
 				f, err := os.Open(path)
 				if err != nil {
 					panic(err)

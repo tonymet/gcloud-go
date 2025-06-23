@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	fs "github.com/tonymet/gcloud-go/fs"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"log"
 	"net/http"
@@ -65,46 +66,25 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 }
 
 // rest call to upload file list to firebase
-func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) []error {
-	errorSet := make([]error, 0, len(manifestSet))
+func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) error {
+	work, ctx := errgroup.WithContext(context.Background())
 	for _, manifest := range manifestSet {
 		if len(manifest.UploadRequiredHashes) == 0 {
 			continue
 		}
-		// worker to upload files.  non-blocking because buffered channel
-		httpWorker := func(jobs <-chan string, results chan<- error) {
-			for shaHash := range jobs {
-				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
-					results <- err
-				} else if err := client.RestUploadFile(f, shaHash, versionId); err != nil {
-					results <- err
-				}
-				results <- nil
-			}
-		}
-		var numJobs = len(manifest.UploadRequiredHashes)
-		// buffer channels = numJobs to avoid blocking
-		jobs, results := make(chan string, numJobs), make(chan error, numJobs)
-		// start workers
-		for w := 1; w <= *FlagConn; w++ {
-			go httpWorker(jobs, results)
-		}
-		// send each sha to jobs channel.
 		for _, shaHash := range manifest.UploadRequiredHashes {
-			jobs <- shaHash
-		}
-		close(jobs)
-		// read from results.  return error
-		// TODO: better error handling (e.g. dlq)
-		for a := 1; a <= numJobs; a++ {
-			err := <-results
-			if err != nil {
-				errorSet = append(errorSet, err)
-			}
+			work.Go(func() error {
+				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
+					return err
+				} else if err := client.RestUploadFile(ctx, f, shaHash, versionId); err != nil {
+					return err
+				}
+				return nil
+			})
 		}
 		log.Printf("upload complete: %d files", len(manifest.UploadRequiredHashes))
 	}
-	return errorSet
+	return work.Wait()
 }
 
 // rest set status to published
@@ -155,10 +135,10 @@ func (client *AuthorizedHTTPClient) RestReleasesCreate(site, versionId string) (
 }
 
 // rest call to upload file contents
-func (client *AuthorizedHTTPClient) RestUploadFile(bodyFile io.Reader, shaHash, versionId string) error {
+func (client *AuthorizedHTTPClient) RestUploadFile(ctx context.Context, bodyFile io.Reader, shaHash, versionId string) error {
 	resource := "https://upload-firebasehosting.googleapis.com/upload/" + versionId + "/files/" + shaHash
 	// set up shas
-	if req, err := http.NewRequest(http.MethodPost, resource, bodyFile); err != nil {
+	if req, err := http.NewRequestWithContext(ctx, http.MethodPost, resource, bodyFile); err != nil {
 		panic(err)
 	} else {
 		req.Header.Add("Content-Type", "application/octet-stream")

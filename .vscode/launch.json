@@ -24,18 +24,41 @@
             ]
         },
         {
+            "name": "Storage2",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/gcloud-go",
+            "env": {
+                // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
+            },
+            // go run ./cmd/gcloud-go storage -bucket isgithubipv6 -prefix hosting/public-test -target public -filter all 
+            "args": [
+                "storage",
+                "-prefix",
+                "hosting/public-test",
+                "-bucket",
+                "isgithubipv6",
+                "-target",
+                "public",
+                "-filter",
+                "all"
+            ]
+        },
+        {
             "name": "Deploy",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "main.go",
+            "program": "${workspaceFolder}/cmd/gcloud-go",
+            "cwd": "${workspaceFolder}",
             "env": {
                 // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
             },
             "args": [
                 "deploy",
                 "-source",
-                "test-output-large",
+                "test-output-small",
                 "-site",
                 "dev-gcloud-go-1",
             ],

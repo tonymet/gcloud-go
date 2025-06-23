@@ -73,7 +73,7 @@ func main() {
 			panic("status not created")
 		} else if popFiles, err := client.RestCreateVersionPopulateFiles(stagingDir, statusVersionCreate.Name); err != nil {
 			panic(err)
-		} else if err := client.RestUploadFileList(statusVersionCreate.Name, popFiles, stagingDir); len(err) != 0 {
+		} else if err := client.RestUploadFileList(statusVersionCreate.Name, popFiles, stagingDir); err != nil {
 			panic(err)
 		} else if statusReturn, err := client.RestVersionSetStatus(statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
 			panic(err)
