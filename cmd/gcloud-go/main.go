@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"github.com/tonymet/gcloud-go/rest"
 	"os"
+
+	"github.com/tonymet/gcloud-go/rest"
 
 	_ "golang.org/x/crypto/x509roots/fallback"
 )
@@ -20,6 +22,7 @@ var (
 	flagSource, flagTemp, flagSite     *string
 	flagBucket, flagPrefix, flagTarget *string
 	cmdDeploy, cmdStorage              *flag.FlagSet
+	flagFilter                         rest.StorageFilter = rest.StorageFilterImages
 )
 
 func init() {
@@ -32,6 +35,14 @@ func init() {
 	flagBucket = cmdStorage.String("bucket", "", "GCS Bucket")
 	flagPrefix = cmdStorage.String("prefix", "/", "GCS Object Prefix")
 	flagTarget = cmdStorage.String("target", ".", "Target Directory for download")
+	cmdStorage.Func("filter", "[default=filter] images|all how to filter files.", func(flag string) error {
+		var ok bool
+		flagFilter, ok = rest.FilterMap[flag]
+		if !ok {
+			return errors.New(flag + " not found")
+		}
+		return nil
+	})
 }
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s deploy|storage|storage-upload [options]\n options:\n", os.Args[0])
@@ -78,13 +89,10 @@ func main() {
 	case "storage":
 		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
 			panic(err)
-		} else if cmdStorage.NFlag() != 3 {
-			usage()
-			os.Exit(2)
 		}
 		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
 			panic(err)
-		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, rest.StorageFilterImages); err != nil {
+		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, flagFilter); err != nil {
 			panic(err)
 		}
 	case "storage-upload":
