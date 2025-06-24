@@ -9,12 +9,12 @@ import (
 	ppath "path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"log"
 
 	"cloud.google.com/go/storage"
 	"github.com/tonymet/gcloud-go/throttle"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -57,7 +57,7 @@ var StorageFilterAll = func(attrs *storage.ObjectAttrs) bool {
 
 // download from GCS storage bucket
 func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
-	var wgWorkers sync.WaitGroup
+	work, _ := errgroup.WithContext(context.Background())
 	var throttle = throttle.NewThrottle(8)
 	ctx := context.Background()
 	if sClient, err := storage.NewClient(ctx, option.WithAuthCredentials(aClient.authCredentials),
@@ -75,33 +75,34 @@ func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix strin
 			if err != nil {
 				panic(err)
 			}
-			wgWorkers.Add(1)
-			go func() {
-				defer wgWorkers.Done()
+			work.Go(func() error {
 				defer throttle.Done()
 				throttle.Wait()
 				objHandle := bucketHandle.Object(attrs.Name)
 				outputFileName := ppath.Join(target, attrs.Name)
 				if !filter(attrs) {
-					return
+					return nil
 				} else if err := conditionalMkdir(outputFileName); err != nil {
-					panic(err)
+					return err
 				} else if outF, err := os.Create(outputFileName); err != nil {
-					panic(err)
+					return err
 				} else if objReader, err := objHandle.NewReader(ctx); err != nil {
-					panic(err)
+					return err
 				} else if _, err := io.Copy(outF, objReader); err != nil {
-					panic(err)
+					return err
 				} else {
 					objReader.Close()
 					outF.Close()
 					log.Printf("downloaded: %s\n", attrs.Name)
+					return nil
 				}
-			}()
+			})
 		}
-		wgWorkers.Wait()
+		if err := work.Wait(); err != nil {
+			return err
+		}
+		return nil
 	}
-	return nil
 }
 
 func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, srcDir string) error {
@@ -111,7 +112,7 @@ func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, 
 		storage.WithJSONReads()); err != nil {
 		return err
 	} else {
-		var wgWorker sync.WaitGroup
+		var work, ctx = errgroup.WithContext(ctx)
 		var throttle = throttle.NewThrottle(8)
 		err := filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
 			if err != nil {
@@ -127,30 +128,34 @@ func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, 
 			}
 			objectName := filepath.ToSlash(filepath.Join(prefix, relPath))
 			// Upload to GCS
-			wgWorker.Add(1)
-			go func() {
+			work.Go(func() error {
 				// Open the file
-				defer wgWorker.Done()
 				defer throttle.Done()
 				throttle.Wait()
 				f, err := os.Open(path)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				defer f.Close()
 				wc := sClient.Bucket(bucketName).Object(objectName).NewWriter(ctx)
 				if _, err := io.Copy(wc, f); err != nil {
 					wc.Close()
-					panic(err)
+					return err
 				}
 				if err := wc.Close(); err != nil {
-					panic(err)
+					return err
 				}
 				log.Printf("Uploaded %s to gs://%s/%s\n", path, bucketName, objectName)
-			}()
+				return nil
+			})
 			return nil
 		})
-		wgWorker.Wait()
-		return err
+		if err != nil {
+			return err
+		}
+		if err := work.Wait(); err != nil {
+			return err
+		}
+		return nil
 	}
 }
