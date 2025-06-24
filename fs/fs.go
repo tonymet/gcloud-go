@@ -21,11 +21,12 @@ type ShaRec struct {
 
 type ShaList []ShaRec
 
-func ShaFiles(dirname, tempDir string) <-chan ShaRec {
-	work, _ := errgroup.WithContext(context.Background())
+func ShaFiles(ctx context.Context, dirname, tempDir string) <-chan ShaRec {
+	work, _ := errgroup.WithContext(ctx)
 	throttle := throttle.NewThrottle(16)
 	shaChannel := make(chan ShaRec)
 	go func() {
+		defer close(shaChannel)
 		err := filepath.WalkDir(dirname, func(path string, f fs.DirEntry, err error) error {
 			if f.IsDir() {
 				return nil
@@ -53,7 +54,6 @@ func ShaFiles(dirname, tempDir string) <-chan ShaRec {
 		if err := work.Wait(); err != nil {
 			panic(err)
 		}
-		close(shaChannel)
 	}()
 	return shaChannel
 }

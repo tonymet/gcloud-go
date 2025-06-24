@@ -55,11 +55,12 @@ func main() {
 		usage()
 		return
 	}
+	ctx := context.Background()
 	switch os.Args[1] {
 	case "deploy":
 		if err := cmdDeploy.Parse(os.Args[2:]); err != nil {
 			panic(err)
-		} else if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+		} else if client, err := rest.AuthorizeClientDefault(ctx); err != nil {
 			panic(err)
 		} else if cwd, err := os.Getwd(); err != nil {
 			panic(err)
@@ -71,9 +72,9 @@ func main() {
 			panic(err)
 		} else if statusVersionCreate.Status != STATUS_CREATED {
 			panic("status not created")
-		} else if popFiles, err := client.RestCreateVersionPopulateFiles(stagingDir, statusVersionCreate.Name); err != nil {
+		} else if popFiles, err := client.RestCreateVersionPopulateFiles(ctx, stagingDir, statusVersionCreate.Name); err != nil {
 			panic(err)
-		} else if err := client.RestUploadFileList(statusVersionCreate.Name, popFiles, stagingDir); err != nil {
+		} else if err := client.RestUploadFileList(ctx, statusVersionCreate.Name, popFiles, stagingDir); err != nil {
 			panic(err)
 		} else if statusReturn, err := client.RestVersionSetStatus(statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
 			panic(err)
@@ -90,21 +91,22 @@ func main() {
 		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
 			panic(err)
 		}
-		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+		if client, err := rest.AuthorizeClientDefault(ctx); err != nil {
 			panic(err)
-		} else if err := client.StorageDownload(*flagBucket, *flagPrefix, *flagTarget, flagFilter); err != nil {
+		} else if sClient, err := rest.NewAuthorizedStorageClient(ctx, client); err != nil {
+			panic(err)
+		} else if err := sClient.StorageDownload(ctx, *flagBucket, *flagPrefix, *flagTarget, flagFilter); err != nil {
 			panic(err)
 		}
 	case "storage-upload":
 		if err := cmdStorage.Parse(os.Args[2:]); err != nil {
 			panic(err)
-		} else if cmdStorage.NFlag() != 3 {
-			usage()
-			os.Exit(2)
 		}
-		if client, err := rest.AuthorizeClientDefault(context.Background()); err != nil {
+		if client, err := rest.AuthorizeClientDefault(ctx); err != nil {
 			panic(err)
-		} else if err := client.StorageUploadDirectory(*flagBucket, *flagPrefix, *flagTarget); err != nil {
+		} else if sClient, err := rest.NewAuthorizedStorageClient(ctx, client); err != nil {
+			panic(err)
+		} else if err := sClient.StorageUploadDirectory(ctx, *flagBucket, *flagPrefix, *flagTarget); err != nil {
 			panic(err)
 		}
 	default:

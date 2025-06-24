@@ -65,8 +65,8 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 }
 
 // rest call to upload file list to firebase
-func (client *AuthorizedHTTPClient) RestUploadFileList(versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) error {
-	work, ctx := errgroup.WithContext(context.Background())
+func (client *AuthorizedHTTPClient) RestUploadFileList(ctx context.Context, versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) error {
+	work, ctx := errgroup.WithContext(ctx)
 	for _, manifest := range manifestSet {
 		if len(manifest.UploadRequiredHashes) == 0 {
 			continue
@@ -151,9 +151,9 @@ func (client *AuthorizedHTTPClient) RestUploadFile(ctx context.Context, bodyFile
 }
 
 // rest populate files
-func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
+func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.Context, stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
-	shas := fs.ShaFiles("./", stagingDir)
+	shas := fs.ShaFiles(ctx, "./", stagingDir)
 	// goroutine to send requests
 	// set up shas
 	vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
