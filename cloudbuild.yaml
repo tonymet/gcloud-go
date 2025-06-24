@@ -1,4 +1,6 @@
 steps:
+- name: 'gcr.io/cloud-builders/git'
+  args: [ 'config',  '--global', 'init.defaultBranch', 'master']
 - name: gcr.io/cloud-builders/docker
   args: [build, '.', -t, us-west1-docker.pkg.dev/$PROJECT_ID/gcloud-lite/gcloud-go]
 - name: gcr.io/cloud-builders/docker
