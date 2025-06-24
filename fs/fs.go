@@ -1,14 +1,17 @@
 package fs
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	ppath "path"
 	"path/filepath"
 	"strings"
-	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	fbcompress "github.com/tonymet/gcloud-go/compress"
+	"github.com/tonymet/gcloud-go/throttle"
 )
 
 type ShaRec struct {
@@ -18,45 +21,39 @@ type ShaRec struct {
 
 type ShaList []ShaRec
 
-func ShaFiles(dirname, tempDir string) (<-chan ShaRec, func(), error) {
-	type jobRequest struct {
-		outFile, inFile string
-	}
-	var wgJobs sync.WaitGroup
+func ShaFiles(dirname, tempDir string) <-chan ShaRec {
+	work, _ := errgroup.WithContext(context.Background())
+	throttle := throttle.NewThrottle(16)
 	shaChannel := make(chan ShaRec)
-	jobsChannel := make(chan jobRequest)
-	worker := func() {
-		defer wgJobs.Done()
-		for j := range jobsChannel {
-			if h, err := fbcompress.HashAndCompressFile(j.outFile, j.inFile); err != nil {
-				panic(err)
-			} else {
-				s := ShaRec{ppath.Join("/", j.inFile), fbcompress.TextSum(h), nil}
-				if err := os.Rename(j.outFile, ppath.Join(tempDir, s.Shasum)); err != nil {
-					panic(err)
-				}
-				shaChannel <- s
+	go func() {
+		err := filepath.WalkDir(dirname, func(path string, f fs.DirEntry, err error) error {
+			if f.IsDir() {
+				return nil
 			}
-		}
-	}
-	wgJobs.Add(4)
-	for i := 0; i < 4; i++ {
-		go worker()
-	}
-	shaProcess := func(path string, f fs.DirEntry, err error) error {
-		if f.IsDir() {
+			outFile := ppath.Join(tempDir, strings.Replace(path, "/", "__", -1))
+			work.Go(func() error {
+				defer throttle.Done()
+				throttle.Wait()
+				if h, err := fbcompress.HashAndCompressFile(outFile, path); err != nil {
+					return err
+				} else {
+					s := ShaRec{ppath.Join("/", path), fbcompress.TextSum(h), nil}
+					if err := os.Rename(outFile, ppath.Join(tempDir, s.Shasum)); err != nil {
+						return err
+					}
+					shaChannel <- s
+				}
+				return nil
+			})
 			return nil
-		}
-		jobsChannel <- jobRequest{ppath.Join(tempDir, strings.Replace(path, "/", "__", -1)), path}
-		return nil
-	} // walk files and update
-	execFunc := func() {
-		if err := filepath.WalkDir(dirname, shaProcess); err != nil {
+		})
+		if err != nil {
 			panic(err)
 		}
-		close(jobsChannel)
-		wgJobs.Wait()
+		if err := work.Wait(); err != nil {
+			panic(err)
+		}
 		close(shaChannel)
-	}
-	return shaChannel, execFunc, nil
+	}()
+	return shaChannel
 }

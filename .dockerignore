@@ -4,6 +4,7 @@
 !compress
 !rest
 !fs
+!throttle
 !go.mod
 !go.sum
 !github-release.sh

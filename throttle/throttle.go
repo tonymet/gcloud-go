@@ -1,4 +1,4 @@
-package rest
+package throttle
 
 type Throttle struct {
 	waitChan chan bool

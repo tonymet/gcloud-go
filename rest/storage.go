@@ -14,6 +14,7 @@ import (
 	"log"
 
 	"cloud.google.com/go/storage"
+	"github.com/tonymet/gcloud-go/throttle"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -57,7 +58,7 @@ var StorageFilterAll = func(attrs *storage.ObjectAttrs) bool {
 // download from GCS storage bucket
 func (aClient *AuthorizedHTTPClient) StorageDownload(bucket string, prefix string, target string, filter StorageFilter) error {
 	var wgWorkers sync.WaitGroup
-	var throttle = NewThrottle(8)
+	var throttle = throttle.NewThrottle(8)
 	ctx := context.Background()
 	if sClient, err := storage.NewClient(ctx, option.WithAuthCredentials(aClient.authCredentials),
 		option.WithScopes(storage.ScopeReadOnly),
@@ -111,7 +112,7 @@ func (aClient *AuthorizedHTTPClient) StorageUploadDirectory(bucketName, prefix, 
 		return err
 	} else {
 		var wgWorker sync.WaitGroup
-		var throttle = NewThrottle(8)
+		var throttle = throttle.NewThrottle(8)
 		err := filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
 			if err != nil {
 				return err

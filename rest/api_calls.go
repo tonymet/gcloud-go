@@ -13,7 +13,6 @@ import (
 	"os"
 	ppath "path"
 	"strings"
-	"sync"
 
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
@@ -154,15 +153,7 @@ func (client *AuthorizedHTTPClient) RestUploadFile(ctx context.Context, bodyFile
 // rest populate files
 func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir string, versionId string) (vpfrs []VersionPopulateFilesReturn, err error) {
 	resource := "https://firebasehosting.googleapis.com/v1beta1/" + versionId + ":populateFiles"
-	var wgAll sync.WaitGroup
-	// start goroutine to scan dirs
-	shas, scanFunc, _ := fs.ShaFiles("./", stagingDir)
-	// start directory scan
-	wgAll.Add(1)
-	go func() {
-		defer wgAll.Done()
-		scanFunc()
-	}()
+	shas := fs.ShaFiles("./", stagingDir)
 	// goroutine to send requests
 	// set up shas
 	vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
@@ -206,7 +197,6 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(stagingDir st
 			}
 		}
 	}
-	wgAll.Wait()
 	return vpfrs, nil
 }
 
