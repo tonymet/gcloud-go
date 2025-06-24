@@ -157,26 +157,25 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.C
 	// goroutine to send requests
 	// set up shas
 	vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
-	lastPage := false
+	var chanOpen bool = true
 	// loop over pages/ size = 1000
-	for {
+	for chanOpen {
 		var (
 			bodyJson VersionPopulateFilesRequestBody
 			r        VersionPopulateFilesReturn
 		)
 		bodyJson.Files = make(map[string]string)
 		for i := 0; i < REST_PAGE_SIZE; i++ {
-			if s, ok := <-shas; !ok {
-				lastPage = true
+			var s fs.ShaRec
+			if s, chanOpen = <-shas; !chanOpen {
 				break
-			} else {
-				bodyJson.Files[s.RelPath] = s.Shasum
 			}
+			bodyJson.Files[s.RelPath] = s.Shasum
 		}
 		// send api call
 		if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
 			panic(err)
-		} else if req, err := http.NewRequest(http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
+		} else if req, err := http.NewRequestWithContext(ctx, http.MethodPost, resource, bytes.NewReader(bodyBuffer)); err != nil {
 			panic(err)
 		} else {
 			req.Header.Add("Content-Type", "application/json")
@@ -191,9 +190,6 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.C
 			} else {
 				log.Printf("files populated: %d files ", len(bodyJson.Files))
 				vpfrs = append(vpfrs, r)
-			}
-			if lastPage {
-				break
 			}
 		}
 	}
