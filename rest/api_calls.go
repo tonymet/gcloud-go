@@ -93,9 +93,9 @@ func (client *AuthorizedHTTPClient) RestVersionSetStatus(versionId string, statu
 	var bodyJson VersionStatusUpdateRequestBody
 	bodyJson.Status = status
 	if bodyBuffer, err := json.Marshal(bodyJson); err != nil {
-		panic(err)
+		return VersionStatusUpdateReturn{}, err
 	} else if req, err := http.NewRequest(http.MethodPatch, resource, bytes.NewReader(bodyBuffer)); err != nil {
-		panic(err)
+		return VersionStatusUpdateReturn{}, err
 	} else {
 		req.Header.Add("Content-Type", "application/json")
 		if res, err := client.Do(req); err != nil {

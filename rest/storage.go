@@ -8,6 +8,7 @@ import (
 	"os"
 	ppath "path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"log"
@@ -73,7 +74,7 @@ func NewAuthorizedStorageClient(ctx context.Context, aClient *AuthorizedHTTPClie
 // download from GCS storage bucket
 func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, bucket string, prefix string, target string, filter StorageFilter) error {
 	work, ctx := errgroup.WithContext(ctx)
-	var throttle = throttle.NewThrottle(8)
+	var throttle = throttle.NewThrottle(4 * runtime.GOMAXPROCS(0))
 	q := storage.Query{Prefix: prefix}
 	if err := q.SetAttrSelection([]string{"Name", "ContentType"}); err != nil {
 		panic(err)
@@ -115,7 +116,7 @@ func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, buc
 
 func (aClient *AuthorizedStorageClient) StorageUploadDirectory(ctx context.Context, bucketName, prefix, srcDir string) error {
 	work, ctx := errgroup.WithContext(ctx)
-	var throttle = throttle.NewThrottle(8)
+	var throttle = throttle.NewThrottle(4 * runtime.GOMAXPROCS(0))
 	err := filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err

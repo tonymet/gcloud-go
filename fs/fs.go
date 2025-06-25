@@ -6,6 +6,7 @@ import (
 	"os"
 	ppath "path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -23,7 +24,7 @@ type ShaList []ShaRec
 
 func ShaFiles(ctx context.Context, dirname, tempDir string) <-chan ShaRec {
 	work, _ := errgroup.WithContext(ctx)
-	throttle := throttle.NewThrottle(16)
+	throttle := throttle.NewThrottle(2 * runtime.GOMAXPROCS(0))
 	shaChannel := make(chan ShaRec)
 	go func() {
 		defer close(shaChannel)

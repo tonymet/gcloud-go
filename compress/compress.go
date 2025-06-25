@@ -26,15 +26,21 @@ func hashAndCompressCopy(target io.WriteCloser, source io.Reader) (*hash.Hash, e
 
 // compress file
 func HashAndCompressFile(outFile, inFile string) (*hash.Hash, error) {
-	if inF, err := fs.Open(inFile); err != nil {
+	var (
+		inF  fileReader
+		outF fileWriter
+		err  error
+	)
+	if inF, err = fs.Open(inFile); err != nil {
 		panic(err)
-	} else if outF, err := fs.Create(outFile); err != nil {
+	} else if outF, err = fs.Create(outFile); err != nil {
 		panic(err)
-	} else if h, err := hashAndCompressCopy(outF, inF); err != nil {
+	}
+	defer inF.Close()
+	defer outF.Close()
+	if h, err := hashAndCompressCopy(outF, inF); err != nil {
 		return nil, err
 	} else {
-		inF.Close()
-		outF.Close()
 		return h, nil
 	}
 }

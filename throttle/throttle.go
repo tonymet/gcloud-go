@@ -1,11 +1,11 @@
 package throttle
 
 type Throttle struct {
-	waitChan chan bool
+	waitChan chan struct{}
 }
 
 func NewThrottle(size int) (t Throttle) {
-	t.waitChan = make(chan bool, size)
+	t.waitChan = make(chan struct{}, size)
 	return
 }
 
@@ -13,5 +13,5 @@ func (t *Throttle) Done() {
 	<-t.waitChan
 }
 func (t *Throttle) Wait() {
-	t.waitChan <- true
+	t.waitChan <- struct{}{}
 }
