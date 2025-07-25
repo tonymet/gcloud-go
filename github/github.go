@@ -130,6 +130,30 @@ func (gc GithubClient) GetReleaseByTag(owner, repo, tag string) (*CreateReleaseR
 	return asset, res, nil
 }
 
+func (gc GithubClient) GetLatestRelease(owner, repo string) (*CreateReleaseResponse, *http.Response, error) {
+	u := url.URL{
+		Scheme: "https",
+		Host:   "api.github.com",
+		Path:   fmt.Sprintf("/repos/%s/%s/releases/latest", owner, repo),
+	}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	res, err := gc.Client.Do(req)
+	if err != nil {
+		return nil, res, err
+	}
+	asset, err := GenerateCreateReleaseResponse(res)
+	if err != nil {
+		return nil, res, err
+	}
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return nil, res, responseError{res: res}
+	}
+	return asset, res, nil
+}
+
 func createReleaseResponseReader(release *CreateReleaseResponse) (io.Reader, error) {
 	buf, err := json.Marshal(*release)
 	if err != nil {
