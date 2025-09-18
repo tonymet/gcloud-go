@@ -28,9 +28,9 @@ var (
 )
 
 func init() {
-	mime.AddExtensionType(".sig", "application/octet-stream")
-	mime.AddExtensionType(".gz", "application/x-gtar-compressed")
-	mime.AddExtensionType(".tar.gz", "application/x-gtar-compressed")
+	mime.AddExtensionType(".sig", "application/octet-stream")         //nolint:errcheck
+	mime.AddExtensionType(".gz", "application/x-gtar-compressed")     //nolint:errcheck
+	mime.AddExtensionType(".tar.gz", "application/x-gtar-compressed") //nolint:errcheck
 }
 
 func logErr(format string, params ...any) {
@@ -61,7 +61,7 @@ func SetObject(bucket, object, contents string) error {
 	if err != nil {
 		panic(err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	f := strings.NewReader(contents)
@@ -85,7 +85,7 @@ func SyncDown(bucket, prefix string) {
 	if err != nil {
 		panic(err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 	bkt := client.Bucket(bucket)
 	query := &storage.Query{Prefix: prefix}
 	it := bkt.Objects(ctx, query)
@@ -148,7 +148,7 @@ func GetObject(ctx context.Context, bucket, object string) *storage.ObjectHandle
 	if err != nil {
 		panic(err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 	bkt := client.Bucket(bucket)
 	return bkt.Object(object)
 }
@@ -160,7 +160,7 @@ func PubsubPushBuild(project, v string) {
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
+	defer c.Close() //nolint:errcheck
 	t := c.Topic("gcloud-lite")
 	defer t.Stop()
 	bc := BuildCommand{"docker-build", v}
@@ -224,7 +224,7 @@ func GithubRelease(args github.GithubArgs) error {
 		if err != nil {
 			panic(err)
 		}
-		fileHandle.Close()
+		fileHandle.Close() //nolint:errcheck
 		logErr("release ID: %+d\n", repoObj.ID)
 		logErr("asset ID: %+x\n", asset.ID)
 		if args.KeyPath != "" {

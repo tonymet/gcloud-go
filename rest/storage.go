@@ -101,8 +101,8 @@ func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, buc
 			} else if _, err := io.Copy(outF, objReader); err != nil {
 				return err
 			} else {
-				objReader.Close()
-				outF.Close()
+				objReader.Close() //nolint:errcheck
+				outF.Close()      //nolint:errcheck
 				log.Printf("downloaded: %s\n", attrs.Name)
 				return nil
 			}
@@ -139,10 +139,10 @@ func (aClient *AuthorizedStorageClient) StorageUploadDirectory(ctx context.Conte
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer f.Close() //nolint:errcheck
 			wc := aClient.sClient.Bucket(bucketName).Object(objectName).NewWriter(ctx)
 			if _, err := io.Copy(wc, f); err != nil {
-				wc.Close()
+				wc.Close() //nolint:errcheck
 				return err
 			}
 			if err := wc.Close(); err != nil {

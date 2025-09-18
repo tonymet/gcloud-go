@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/tonymet/gcloud-go/kms"
 	"os"
+
+	"github.com/tonymet/gcloud-go/kms"
 )
 
 var (
@@ -26,12 +27,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer outputWriter.Close()
+	defer outputWriter.Close() //nolint:errcheck
 	inputReader, err := os.Open(filename)
 	if err != nil {
 		panic(err)
 	}
-	defer inputReader.Close()
+	defer inputReader.Close() //nolint:errcheck
 	err = kms.SignAsymmetric(outputWriter, keypath, inputReader)
 	if err != nil {
 		panic(err)

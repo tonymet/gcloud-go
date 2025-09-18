@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	fs "github.com/tonymet/gcloud-go/fs"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	ppath "path"
 	"strings"
+
+	fs "github.com/tonymet/gcloud-go/fs"
+	"golang.org/x/sync/errgroup"
 
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
@@ -157,7 +158,7 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.C
 	// goroutine to send requests
 	// set up shas
 	vpfrs = make([]VersionPopulateFilesReturn, 0, 1)
-	var chanOpen bool = true
+	var chanOpen = true
 	// loop over pages/ size = 1000
 	for chanOpen {
 		var (

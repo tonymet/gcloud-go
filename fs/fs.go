@@ -32,7 +32,7 @@ func ShaFiles(ctx context.Context, dirname, tempDir string) <-chan ShaRec {
 			if f.IsDir() {
 				return nil
 			}
-			outFile := ppath.Join(tempDir, strings.Replace(path, "/", "__", -1))
+			outFile := ppath.Join(tempDir, strings.ReplaceAll(path, "/", "__"))
 			work.Go(func() error {
 				defer throttle.Done()
 				throttle.Wait()

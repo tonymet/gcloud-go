@@ -16,7 +16,7 @@ func hashAndCompressCopy(target io.WriteCloser, source io.Reader) (*hash.Hash, e
 	h := sha256.New()
 	mWriter := io.MultiWriter(target, h)
 	zWriter := gzip.NewWriter(mWriter)
-	defer zWriter.Close()
+	defer zWriter.Close() //nolint:errcheck
 	if _, err := io.Copy(zWriter, source); err != nil {
 		return nil, err
 	} else {
@@ -36,8 +36,8 @@ func HashAndCompressFile(outFile, inFile string) (*hash.Hash, error) {
 	} else if outF, err = fs.Create(outFile); err != nil {
 		panic(err)
 	}
-	defer inF.Close()
-	defer outF.Close()
+	defer inF.Close()  //nolint:errcheck
+	defer outF.Close() //nolint:errcheck
 	if h, err := hashAndCompressCopy(outF, inF); err != nil {
 		return nil, err
 	} else {

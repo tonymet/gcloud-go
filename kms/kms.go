@@ -39,7 +39,7 @@ func SignAsymmetricDigest(ctx context.Context, w io.Writer, name string, digest 
 	if err != nil {
 		return fmt.Errorf("failed to create kms client: %w", err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 	// Optional but recommended: Compute digest's CRC32C.
 	crc32c := func(data []byte) uint32 {
 		t := crc32.MakeTable(crc32.Castagnoli)
