@@ -1,6 +1,6 @@
 @PHONY:bin
 bin: build/bin/gcloud-go
-build/bin/gcloud-go:cmd/gcloud-go/main.go
+build/bin/gcloud-go:cmd/gcloud-go/main.go go.mod go.sum
 	mkdir -p build/bin
 	go build -o build/bin/gcloud-go -ldflags="-w -extldflags=-static" ./cmd/gcloud-go
 
