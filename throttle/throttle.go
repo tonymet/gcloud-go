@@ -15,3 +15,11 @@ func (t *Throttle) Done() {
 func (t *Throttle) Wait() {
 	t.waitChan <- struct{}{}
 }
+
+func (t *Throttle) Go(f func()) {
+	go func() {
+		t.waitChan <- struct{}{}
+		f()
+		<-t.waitChan
+	}()
+}

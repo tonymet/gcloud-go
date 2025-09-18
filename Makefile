@@ -1,8 +1,8 @@
 @PHONY:bin
 bin: build/bin/gcloud-go
-build/bin/gcloud-go:main.go
+build/bin/gcloud-go:cmd/gcloud-go/main.go
 	mkdir -p build/bin
-	go build -o build/bin/gcloud-go -ldflags="-w -extldflags=-static" .
+	go build -o build/bin/gcloud-go -ldflags="-w -extldflags=-static" ./cmd/gcloud-go
 
 build/gcloud-go.tgz:build/bin/gcloud-go
 	tar -zcf build/gcloud-go.tgz -C build/bin .

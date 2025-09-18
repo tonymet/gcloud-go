@@ -154,8 +154,7 @@ func GetObject(ctx context.Context, bucket, object string) *storage.ObjectHandle
 }
 
 func PubsubPushBuild(project, v string) {
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	c, err := pubsub.NewClient(ctx, project)
 	if err != nil {
