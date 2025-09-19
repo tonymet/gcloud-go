@@ -153,26 +153,24 @@ func GetObject(ctx context.Context, bucket, object string) *storage.ObjectHandle
 	return bkt.Object(object)
 }
 
-func PubsubPushBuild(project, v string) {
+func PubSubPush(project, topic string, object any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	c, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close() //nolint:errcheck
-	t := c.Topic("gcloud-lite")
+	t := c.Topic(topic)
 	defer t.Stop()
-	bc := BuildCommand{"docker-build", v}
-	if bcMarshalled, err := bc.toJson(); err != nil {
-		panic(err)
+	if marshalled, err := json.Marshal(object); err != nil {
+		return err
 	} else {
-		pr := t.Publish(ctx, &pubsub.Message{Data: bcMarshalled})
+		pr := t.Publish(ctx, &pubsub.Message{Data: marshalled})
 		if _, err := pr.Get(ctx); err != nil {
-			panic(err)
+			return err
 		}
-		logErr("publish complete. message = %s", string(bcMarshalled))
 	}
+	return nil
 }
 
 func IncrementVersion(v string) string {

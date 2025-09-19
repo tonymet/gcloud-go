@@ -62,8 +62,7 @@ func TestThrottle_Go(t *testing.T) {
 func TestThrottle_Done(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), ttl)
 	defer cancel()
-	total := 0
-	cap := 5
+	total, cap := 0, 5
 	th := throttle.NewThrottle(cap)
 	// count the number of test routines with plenty of buffer
 	testChan := make(chan int, cap+1)
