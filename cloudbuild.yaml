@@ -19,7 +19,7 @@ images:
 - us-west1-docker.pkg.dev/$PROJECT_ID/gcloud-lite/gcloud-go
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_ID/secrets/GH_TOKEN/versions/1
+  - versionName: projects/$PROJECT_ID/secrets/GH_TOKEN/versions/3
     env: GH_TOKEN
 tags: [latest]
 options:
