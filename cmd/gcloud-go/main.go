@@ -66,9 +66,10 @@ func main() {
 			panic(err)
 		} else if stagingDir, err := os.MkdirTemp(*flagTemp, "firebase-"); err != nil {
 			panic(err)
+		} else if config := rest.FirebaseConfigOrDefault(*flagSite); false {
 		} else if err := os.Chdir(*flagSource); err != nil {
 			panic(err)
-		} else if statusVersionCreate, err := client.RestCreateVersion(*flagSite); err != nil {
+		} else if statusVersionCreate, err := client.RestCreateVersion(*flagSite, config); err != nil {
 			panic(err)
 		} else if statusVersionCreate.Status != STATUS_CREATED {
 			panic("status not created")
@@ -76,16 +77,12 @@ func main() {
 			panic(err)
 		} else if err := client.RestUploadFileList(ctx, statusVersionCreate.Name, popFiles, stagingDir); err != nil {
 			panic(err)
-		} else if statusReturn, err := client.RestVersionSetStatus(statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
+		} else if _, err := client.RestVersionSetStatus(statusVersionCreate.Name, STATUS_FINALIZED); err != nil {
 			panic(err)
-		} else if statusRelease, err := client.RestReleasesCreate(*flagSite, statusVersionCreate.Name); err != nil {
+		} else if _, err := client.RestReleasesCreate(*flagSite, statusVersionCreate.Name); err != nil {
 			panic(err)
 		} else if err := os.Chdir(cwd); err != nil {
 			panic(err)
-		} else {
-			_ = statusReturn
-			_ = statusRelease
-			_ = statusVersionCreate
 		}
 	case "storage":
 		if err := cmdStorage.Parse(os.Args[2:]); err != nil {

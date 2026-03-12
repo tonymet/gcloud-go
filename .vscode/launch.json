@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": 0
+        },
+        {
             "name": "Storage",
             "type": "go",
             "request": "launch",
@@ -51,16 +58,16 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/gcloud-go",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/tmp",
             "env": {
                 // "GOOGLE_APPLICATION_CREDENTIALS": "/home/tonymet/sotion/gcloud-go/tonym-us-99872f7c98cd.json"
             },
             "args": [
                 "deploy",
                 "-source",
-                "test-output-small",
+                "public",
                 "-site",
-                "dev-gcloud-go-1",
+                "dev-tonym-us",
             ],
         }
     ]

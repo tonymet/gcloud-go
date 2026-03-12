@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	ppath "path"
-	"strings"
 
 	fs "github.com/tonymet/gcloud-go/fs"
 	"golang.org/x/sync/errgroup"
@@ -197,32 +196,109 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.C
 	return vpfrs, nil
 }
 
+// FirebaseConfigOrDefault reads the hosting configuration from firebase.json
+// or returns a default configuration if not found or on error.
+func FirebaseConfigOrDefault(site string) ServingConfig {
+	config := ServingConfig{
+		Headers: []Header{
+			{
+				Glob: "**",
+				Headers: map[string]string{
+					"Cache-Control": "max-age=1800",
+				},
+			},
+		},
+	}
+
+	f, err := os.Open("firebase.json")
+	if err != nil {
+		return config
+	}
+	defer f.Close()
+
+	var fConfig FirebaseConfig
+	if err := json.NewDecoder(f).Decode(&fConfig); err != nil {
+		log.Printf("Warning: failed to decode firebase.json: %v", err)
+		return config
+	}
+
+	trimmedHosting := bytes.TrimSpace(fConfig.Hosting)
+	if len(trimmedHosting) == 0 {
+		return config
+	}
+
+	var hConfig HostingConfig
+	// Hosting can be a single object or an array
+	if trimmedHosting[0] == '{' {
+		if err := json.Unmarshal(trimmedHosting, &hConfig); err != nil {
+			log.Printf("Warning: failed to unmarshal hosting config: %v", err)
+			return config
+		}
+		// If site is specified, verify it matches
+		if hConfig.Site != "" && hConfig.Site != site && site != "default" && site != "" {
+			hConfig = HostingConfig{} // clear if not match
+		}
+	} else if trimmedHosting[0] == '[' {
+		var hConfigs []HostingConfig
+		if err := json.Unmarshal(trimmedHosting, &hConfigs); err != nil {
+			log.Printf("Warning: failed to unmarshal hosting configs: %v", err)
+			return config
+		}
+		for _, hc := range hConfigs {
+			// take the first
+			hConfig = hc
+			break
+		}
+	}
+
+	if len(hConfig.Headers) > 0 {
+		config.Headers = nil
+		for _, fh := range hConfig.Headers {
+			newHeader := Header{
+				Headers: make(map[string]string),
+			}
+			if fh.Glob != "" {
+				newHeader.Glob = fh.Glob
+			} else {
+				newHeader.Glob = fh.Source
+			}
+
+			for _, kv := range fh.Headers {
+				newHeader.Headers[kv.Key] = kv.Value
+			}
+			config.Headers = append(config.Headers, newHeader)
+		}
+	}
+
+	return config
+}
+
 // rest call to create new version on Firebase Hosting
-func (client *AuthorizedHTTPClient) RestCreateVersion(site string) (r VersionCreateReturn, e error) {
-	reqBody := ` 
-	{
-             "config": {
-               "headers": [{
-                 "glob": "**",
-                 "headers": {
-                   "Cache-Control": "max-age=1800"
-                 }
-               }]
-             }
-           }
-	`
+func (client *AuthorizedHTTPClient) RestCreateVersion(site string, config ServingConfig) (r VersionCreateReturn, e error) {
+	reqBody := VersionCreateRequestBody{
+		Config: config,
+	}
+
 	resource := "https://firebasehosting.googleapis.com/v1beta1/sites/" + site + "/versions"
-	if req, err := http.NewRequest("POST", resource, strings.NewReader(reqBody)); err != nil {
-		panic(err)
-	} else if resp, err := client.Do(req); err != nil {
+	bodyBuffer, err := json.Marshal(reqBody)
+	if err != nil {
 		return VersionCreateReturn{}, err
-	} else if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return VersionCreateReturn{},
-			formatRestResponseMessage("RestCreateVersion", resp)
-	} else if body, err := io.ReadAll(resp.Body); err != nil {
-		return VersionCreateReturn{}, err
-	} else if err := json.Unmarshal(body, &r); err != nil {
+	}
+
+	if req, err := http.NewRequest("POST", resource, bytes.NewReader(bodyBuffer)); err != nil {
 		panic(err)
+	} else {
+		req.Header.Add("Content-Type", "application/json")
+		if resp, err := client.Do(req); err != nil {
+			return VersionCreateReturn{}, err
+		} else if resp.StatusCode < 200 || resp.StatusCode > 299 {
+			return VersionCreateReturn{},
+				formatRestResponseMessage("RestCreateVersion", resp)
+		} else if body, err := io.ReadAll(resp.Body); err != nil {
+			return VersionCreateReturn{}, err
+		} else if err := json.Unmarshal(body, &r); err != nil {
+			panic(err)
+		}
 	}
 	log.Printf("version created: id = %s", r.Name)
 	return r, nil

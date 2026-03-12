@@ -2,21 +2,55 @@
 package rest
 
 import (
+	"encoding/json"
 	"time"
 )
 
-// create version call
+type FirebaseHeaderKV struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type FirebaseHeader struct {
+	Source  string             `json:"source"`
+	Glob    string             `json:"glob"`
+	Headers []FirebaseHeaderKV `json:"headers"`
+}
+
+type HostingConfig struct {
+	Site           string            `json:"site"`
+	Public         string            `json:"public"`
+	Ignore         []string          `json:"ignore"`
+	Redirects      []json.RawMessage `json:"redirects"`
+	Rewrites       []json.RawMessage `json:"rewrites"`
+	Headers        []FirebaseHeader  `json:"headers"`
+	CleanUrls      bool              `json:"cleanUrls"`
+	TrailingSlash  bool              `json:"trailingSlash"`
+	AppAssociation string            `json:"appAssociation"`
+}
+
+type FirebaseConfig struct {
+	Hosting json.RawMessage `json:"hosting"`
+}
+
+type Header struct {
+	Glob    string            `json:"glob"`
+	Headers map[string]string `json:"headers"`
+}
+
+type ServingConfig struct {
+	Headers []Header `json:"headers"`
+}
+
+// create version call return
 type VersionCreateReturn struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Config struct {
-		Headers []struct {
-			Glob    string `json:"glob"`
-			Headers struct {
-				CacheControl string `json:"Cache-Control"`
-			} `json:"headers"`
-		} `json:"headers"`
-	} `json:"config"`
+	Name   string        `json:"name"`
+	Status string        `json:"status"`
+	Config ServingConfig `json:"config"`
+}
+
+type VersionCreateRequestBody struct {
+	Config ServingConfig `json:"config"`
 }
 
 // Populate Files request
@@ -35,17 +69,10 @@ type VersionStatusUpdateRequestBody struct {
 	Status string `json:"status"`
 }
 type VersionStatusUpdateReturn struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Config struct {
-		Headers []struct {
-			Glob    string `json:"glob"`
-			Headers struct {
-				CacheControl string `json:"Cache-Control"`
-			} `json:"headers"`
-		} `json:"headers"`
-	} `json:"config"`
-	CreateTime time.Time `json:"createTime"`
+	Name       string        `json:"name"`
+	Status     string        `json:"status"`
+	Config     ServingConfig `json:"config"`
+	CreateTime time.Time     `json:"createTime"`
 	CreateUser struct {
 		Email string `json:"email"`
 	} `json:"createUser"`
@@ -60,16 +87,9 @@ type VersionStatusUpdateReturn struct {
 type ReleasesCreateReturn struct {
 	Name    string `json:"name"`
 	Version struct {
-		Name   string `json:"name"`
-		Status string `json:"status"`
-		Config struct {
-			Headers []struct {
-				Glob    string `json:"glob"`
-				Headers struct {
-					CacheControl string `json:"Cache-Control"`
-				} `json:"headers"`
-			} `json:"headers"`
-		} `json:"config"`
+		Name   string        `json:"name"`
+		Status string        `json:"status"`
+		Config ServingConfig `json:"config"`
 	} `json:"version"`
 	Type        string    `json:"type"`
 	ReleaseTime time.Time `json:"releaseTime"`
