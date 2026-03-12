@@ -10,3 +10,4 @@ test-output*
 **/test1*txt
 public
 output/**
+dist
