@@ -1,4 +1,7 @@
 
+
+[![Go Tests](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml/badge.svg)](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml)
+
 ## About
 
 gcloud-go -- a fast & lightweight rest client for deployment to Firebase Hosting, Google Cloud Storage and other APIs
