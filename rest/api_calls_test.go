@@ -90,7 +90,7 @@ func TestRestCreateVersionWithMock(t *testing.T) {
 
 	// Test case 1: No firebase.json
 	os.Remove("firebase.json")
-	config := FirebaseConfigOrDefault("test-site")
+	config := FirebaseConfigOrDefault("test-target")
 	_, err := client.RestCreateVersion("test-site", config)
 	if err != nil {
 		t.Fatalf("RestCreateVersion failed: %v", err)
@@ -115,7 +115,7 @@ func TestRestCreateVersionWithMock(t *testing.T) {
 	os.WriteFile("firebase.json", []byte(firebaseConfig), 0644)
 	defer os.Remove("firebase.json")
 
-	_, err = client.RestCreateVersion("test-site", FirebaseConfigOrDefault("test-site"))
+	_, err = client.RestCreateVersion("test-site", FirebaseConfigOrDefault("default"))
 	if err != nil {
 		t.Fatalf("RestCreateVersion failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 	tests := []struct {
 		name           string
 		firebaseJson   string
-		site           string
+		target         string
 		expectHeaders  int
 		expectGlob     string
 		expectCacheCtl string
@@ -149,7 +149,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 					}]
 				}
 			}`,
-			site:           "default",
+			target:         "default",
 			expectHeaders:  1,
 			expectGlob:     "**",
 			expectCacheCtl: "max-age=3600",
@@ -159,7 +159,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 			firebaseJson: `{
 				"hosting": [
 					{
-						"site": "site-a",
+						"target": "site-a",
 						"headers": [{
 							"glob": "/a/**",
 							"headers": [{
@@ -169,7 +169,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 						}]
 					},
 					{
-						"site": "site-b",
+						"target": "site-b",
 						"headers": [{
 							"glob": "/b/**",
 							"headers": [{
@@ -180,11 +180,11 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 					}
 				]
 			}`,
-			site:           "site-b",
+			target:         "site-b",
 			expectHeaders:  1,
 			expectGlob:     "/b/**",
 			expectCacheCtl: "max-age=200",
-			skip:           true,
+			skip:           false,
 		},
 		{
 			name: "Firebase source field mapping",
@@ -198,7 +198,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 					}]
 				}
 			}`,
-			site:           "default",
+			target:         "default",
 			expectHeaders:  1,
 			expectGlob:     "/src/**",
 			expectCacheCtl: "",
@@ -215,7 +215,7 @@ func TestFirebaseConfigOrDefault(t *testing.T) {
 			}
 			defer os.Remove("firebase.json")
 
-			config := FirebaseConfigOrDefault(tt.site)
+			config := FirebaseConfigOrDefault(tt.target)
 
 			if len(config.Headers) != tt.expectHeaders {
 				t.Errorf("expected %d headers, got %d", tt.expectHeaders, len(config.Headers))

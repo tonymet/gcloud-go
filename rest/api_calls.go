@@ -198,7 +198,7 @@ func (client *AuthorizedHTTPClient) RestCreateVersionPopulateFiles(ctx context.C
 
 // FirebaseConfigOrDefault reads the hosting configuration from firebase.json
 // or returns a default configuration if not found or on error.
-func FirebaseConfigOrDefault(site string) ServingConfig {
+func FirebaseConfigOrDefault(target string) ServingConfig {
 	config := ServingConfig{
 		Headers: []Header{
 			{
@@ -234,8 +234,8 @@ func FirebaseConfigOrDefault(site string) ServingConfig {
 			log.Printf("Warning: failed to unmarshal hosting config: %v", err)
 			return config
 		}
-		// If site is specified, verify it matches
-		if hConfig.Site != "" && hConfig.Site != site && site != "default" && site != "" {
+		// If target is specified, verify it matches
+		if hConfig.Target != "" && hConfig.Target != target && target != "default" && target != "" {
 			hConfig = HostingConfig{} // clear if not match
 		}
 	} else if trimmedHosting[0] == '[' {
@@ -245,9 +245,10 @@ func FirebaseConfigOrDefault(site string) ServingConfig {
 			return config
 		}
 		for _, hc := range hConfigs {
-			// take the first
-			hConfig = hc
-			break
+			if hc.Target == target || (target == "prod" && hc.Target == "") {
+				hConfig = hc
+				break
+			}
 		}
 	}
 

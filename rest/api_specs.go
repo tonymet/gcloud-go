@@ -19,6 +19,7 @@ type FirebaseHeader struct {
 
 type HostingConfig struct {
 	Site           string            `json:"site"`
+	Target         string            `json:"target"`
 	Public         string            `json:"public"`
 	Ignore         []string          `json:"ignore"`
 	Redirects      []json.RawMessage `json:"redirects"`

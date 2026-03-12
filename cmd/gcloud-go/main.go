@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	flagSource, flagTemp, flagSite     *string
-	flagBucket, flagPrefix, flagTarget *string
-	cmdDeploy, cmdStorage              *flag.FlagSet
-	flagFilter                         rest.StorageFilter = rest.StorageFilterImages
+	flagSource, flagTemp, flagSite                   *string
+	flagBucket, flagPrefix, flagTarget, flagFbTarget *string
+	cmdDeploy, cmdStorage                            *flag.FlagSet
+	flagFilter                                       rest.StorageFilter = rest.StorageFilterImages
 )
 
 func init() {
@@ -31,6 +31,7 @@ func init() {
 	rest.FlagConn = cmdDeploy.Int("connections", 8, "number of connections")
 	flagSource = cmdDeploy.String("source", "content", "Source directory for content")
 	flagSite = cmdDeploy.String("site", "default", "Name of site (not project)")
+	flagFbTarget = cmdDeploy.String("fbtarget", "prod", "Name of target in firebase.json")
 	cmdStorage = flag.NewFlagSet("storage", flag.ExitOnError)
 	flagBucket = cmdStorage.String("bucket", "", "GCS Bucket")
 	flagPrefix = cmdStorage.String("prefix", "/", "GCS Object Prefix")
@@ -66,7 +67,7 @@ func main() {
 			panic(err)
 		} else if stagingDir, err := os.MkdirTemp(*flagTemp, "firebase-"); err != nil {
 			panic(err)
-		} else if config := rest.FirebaseConfigOrDefault(*flagSite); false {
+		} else if config := rest.FirebaseConfigOrDefault(*flagFbTarget); false {
 		} else if err := os.Chdir(*flagSource); err != nil {
 			panic(err)
 		} else if statusVersionCreate, err := client.RestCreateVersion(*flagSite, config); err != nil {
