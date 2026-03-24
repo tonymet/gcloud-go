@@ -28,9 +28,15 @@ var (
 )
 
 func init() {
-	mime.AddExtensionType(".sig", "application/octet-stream")         //nolint:errcheck
-	mime.AddExtensionType(".gz", "application/x-gtar-compressed")     //nolint:errcheck
-	mime.AddExtensionType(".tar.gz", "application/x-gtar-compressed") //nolint:errcheck
+	if err := mime.AddExtensionType(".sig", "application/octet-stream"); err != nil {
+		log.Printf("Warning: failed to add mime type for .sig: %v", err)
+	}
+	if err := mime.AddExtensionType(".gz", "application/x-gtar-compressed"); err != nil {
+		log.Printf("Warning: failed to add mime type for .gz: %v", err)
+	}
+	if err := mime.AddExtensionType(".tar.gz", "application/x-gtar-compressed"); err != nil {
+		log.Printf("Warning: failed to add mime type for .tar.gz: %v", err)
+	}
 }
 
 func logErr(format string, params ...any) {
@@ -207,7 +213,7 @@ func GithubRelease(args github.GithubArgs) error {
 	}
 	if repoObj, _, err := gc.GithubCreateRelease(owner, repo, r); err != nil {
 		panic(err)
-	} else if fileHandle, err := os.Open(file); err != nil {
+	} else if fileHandle, err := os.Open(file); err != nil { // #nosec G304
 		panic(err)
 	} else {
 		fInfo, err := fileHandle.Stat()
@@ -222,7 +228,9 @@ func GithubRelease(args github.GithubArgs) error {
 		if err != nil {
 			panic(err)
 		}
-		fileHandle.Close() //nolint:errcheck
+		if err := fileHandle.Close(); err != nil {
+			return err
+		}
 		logErr("release ID: %+d\n", repoObj.ID)
 		logErr("asset ID: %+x\n", asset.ID)
 		if args.KeyPath != "" {

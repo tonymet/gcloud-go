@@ -73,6 +73,15 @@ func NewAuthorizedStorageClient(ctx context.Context, aClient *AuthorizedHTTPClie
 
 // download from GCS storage bucket
 func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, bucket string, prefix string, target string, filter StorageFilter) error {
+	if err := os.MkdirAll(target, 0750); err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(target)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
 	work, ctx := errgroup.WithContext(ctx)
 	var throttle = throttle.NewThrottle(4 * runtime.GOMAXPROCS(0))
 	q := storage.Query{Prefix: prefix}
@@ -89,20 +98,26 @@ func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, buc
 			defer throttle.Done()
 			throttle.Wait()
 			objHandle := bucketHandle.Object(attrs.Name)
-			outputFileName := ppath.Join(target, attrs.Name)
+			outputFileName := attrs.Name
 			if !filter(attrs) {
 				return nil
-			} else if err := conditionalMkdir(outputFileName); err != nil {
+			} else if err := rootMkdirAll(root, outputFileName); err != nil {
 				return err
-			} else if outF, err := os.Create(outputFileName); err != nil {
+			} else if outF, err := root.Create(outputFileName); err != nil {
 				return err
 			} else if objReader, err := objHandle.NewReader(ctx); err != nil {
 				return err
 			} else if _, err := io.Copy(outF, objReader); err != nil {
 				return err
 			} else {
-				objReader.Close() //nolint:errcheck
-				outF.Close()      //nolint:errcheck
+				err1 := objReader.Close()
+				err2 := outF.Close()
+				if err1 != nil {
+					return err1
+				}
+				if err2 != nil {
+					return err2
+				}
 				log.Printf("downloaded: %s\n", attrs.Name)
 				return nil
 			}
@@ -114,10 +129,36 @@ func (aClient *AuthorizedStorageClient) StorageDownload(ctx context.Context, buc
 	return nil
 }
 
+func rootMkdirAll(root *os.Root, path string) error {
+	dir := ppath.Dir(path)
+	if dir == "." || dir == "/" {
+		return nil
+	}
+	parts := strings.Split(dir, "/")
+	var current string
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		current = ppath.Join(current, part)
+		err := root.Mkdir(current, 0750)
+		if err != nil && !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
 func (aClient *AuthorizedStorageClient) StorageUploadDirectory(ctx context.Context, bucketName, prefix, srcDir string) error {
+	root, err := os.OpenRoot(srcDir)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
 	work, ctx := errgroup.WithContext(ctx)
 	var throttle = throttle.NewThrottle(4 * runtime.GOMAXPROCS(0))
-	err := filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
+	err = filepath.WalkDir(srcDir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -135,14 +176,14 @@ func (aClient *AuthorizedStorageClient) StorageUploadDirectory(ctx context.Conte
 			// Open the file
 			defer throttle.Done()
 			throttle.Wait()
-			f, err := os.Open(path)
+			f, err := root.Open(relPath)
 			if err != nil {
 				return err
 			}
-			defer f.Close() //nolint:errcheck
+			defer f.Close()
 			wc := aClient.sClient.Bucket(bucketName).Object(objectName).NewWriter(ctx)
 			if _, err := io.Copy(wc, f); err != nil {
-				wc.Close() //nolint:errcheck
+				_ = wc.Close()
 				return err
 			}
 			if err := wc.Close(); err != nil {

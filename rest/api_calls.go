@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	ppath "path"
 
 	fs "github.com/tonymet/gcloud-go/fs"
 	"golang.org/x/sync/errgroup"
@@ -66,6 +65,12 @@ func AuthorizeClientDefault(ctx context.Context) (*AuthorizedHTTPClient, error) 
 
 // rest call to upload file list to firebase
 func (client *AuthorizedHTTPClient) RestUploadFileList(ctx context.Context, versionId string, manifestSet []VersionPopulateFilesReturn, stagingDir string) error {
+	root, err := os.OpenRoot(stagingDir)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
 	work, ctx := errgroup.WithContext(ctx)
 	for _, manifest := range manifestSet {
 		if len(manifest.UploadRequiredHashes) == 0 {
@@ -73,7 +78,7 @@ func (client *AuthorizedHTTPClient) RestUploadFileList(ctx context.Context, vers
 		}
 		for _, shaHash := range manifest.UploadRequiredHashes {
 			work.Go(func() error {
-				if f, err := os.Open(ppath.Join(stagingDir, shaHash)); err != nil {
+				if f, err := root.Open(shaHash); err != nil {
 					return err
 				} else if err := client.RestUploadFile(ctx, f, shaHash, versionId); err != nil {
 					return err

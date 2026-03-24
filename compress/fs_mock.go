@@ -53,8 +53,8 @@ type fileSystem interface {
 	Create(name string) (fileWriter, error)
 }
 
-func (osFS) Open(name string) (fileReader, error)   { return os.Open(name) }
-func (osFS) Create(name string) (fileWriter, error) { return os.Create(name) }
+func (osFS) Open(name string) (fileReader, error)   { return os.Open(name) }   // #nosec G304
+func (osFS) Create(name string) (fileWriter, error) { return os.Create(name) } // #nosec G304
 
 // for test-time replace os.File contents with string
 type stringFS struct {

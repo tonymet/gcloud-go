@@ -23,12 +23,12 @@ func init() {
 func main() {
 	flag.Parse()
 	// setup in & out
-	outputWriter, err := os.Create(output)
+	outputWriter, err := os.Create(output) // #nosec G304
 	if err != nil {
 		panic(err)
 	}
 	defer outputWriter.Close() //nolint:errcheck
-	inputReader, err := os.Open(filename)
+	inputReader, err := os.Open(filename) // #nosec G304
 	if err != nil {
 		panic(err)
 	}
