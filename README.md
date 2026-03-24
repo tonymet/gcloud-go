@@ -1,6 +1,7 @@
 
 
 [![Go Tests](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml/badge.svg)](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml)
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/gcloud-go)
 
 ## About
 
