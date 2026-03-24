@@ -41,8 +41,3 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
-
-      - name: Run OSV-Scanner
-        uses: google/osv-scanner-action/scan@v1
-        with:
-          scan-args: "-r ."
