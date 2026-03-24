@@ -19,8 +19,12 @@ test-full:test-lite
 	golangci-lint run ./...
 
 test-sec: 
-	govulncheck .
-	gosec ./...;
+	@echo "Running govulncheck..."
+	govulncheck ./...
+	@echo "Running gosec..."
+	gosec ./...
+	@echo "Running osv-scanner..."
+	osv-scanner -r .
 
 test-e2e:
 	go run . deploy -source ${SOURCE} -site ${FIREBASE_SITE}
