@@ -31,6 +31,6 @@ jobs:
           govulncheck ./...
 
       - name: Run OSV-Scanner
-        uses: google/osv-scanner-action/scan@v2
+        uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.3
         with:
           scan-args: "-r ."
