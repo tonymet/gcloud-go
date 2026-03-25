@@ -1,6 +1,5 @@
-
-
 [![Go Tests](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml/badge.svg)](https://github.com/tonymet/gcloud-go/actions/workflows/go-tests.yml)
+[![Security Scan](https://github.com/tonymet/gcloud-go/actions/workflows/security-scan.yml/badge.svg)](https://github.com/tonymet/gcloud-go/actions/workflows/security-scan.yml)
 
 ## About
 
