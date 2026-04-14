@@ -277,34 +277,7 @@ func FirebaseConfigOrDefault(target string) ServingConfig {
 	}
 
 	if len(hConfig.Redirects) > 0 {
-		for _, fr := range hConfig.Redirects {
-			newRedirect := Redirect{}
-
-			if fr.Glob != "" {
-				newRedirect.Glob = fr.Glob
-			} else if fr.Source != "" {
-				newRedirect.Glob = fr.Source
-			}
-
-			if fr.Regex != "" {
-				newRedirect.Regex = fr.Regex
-				newRedirect.Glob = "" // Ensure Glob isn't set when Regex is used, per typical Firebase precedence, though we prioritize Regex here just by passing it on.
-			}
-
-			if fr.StatusCode != 0 {
-				newRedirect.StatusCode = fr.StatusCode
-			} else if fr.Type != 0 {
-				newRedirect.StatusCode = fr.Type
-			}
-
-			if fr.Location != "" {
-				newRedirect.Location = fr.Location
-			} else if fr.Destination != "" {
-				newRedirect.Location = fr.Destination
-			}
-
-			config.Redirects = append(config.Redirects, newRedirect)
-		}
+		config.Redirects = hConfig.Redirects
 	}
 
 	return config

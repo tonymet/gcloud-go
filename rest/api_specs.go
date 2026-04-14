@@ -18,13 +18,20 @@ type FirebaseHeader struct {
 }
 
 type FirebaseRedirect struct {
-	Source      string `json:"source"`
-	Glob        string `json:"glob"`
-	Regex       string `json:"regex"`
-	Destination string `json:"destination"`
-	Location    string `json:"location"`
-	Type        int    `json:"type"`
-	StatusCode  int    `json:"statusCode"`
+	Source      string              `json:"source"`
+	Glob        string              `json:"glob"`
+	Regex       string              `json:"regex"`
+	Destination string              `json:"destination"`
+	Location    string              `json:"location"`
+	Type        int                 `json:"type"`
+	StatusCode  int                 `json:"statusCode"`
+	Condition   FRRedirectCondition `json:"condition"`
+}
+
+type FRRedirectCondition struct {
+	Headers struct {
+		Host []string `json:"Host"`
+	} `json:"headers"`
 }
 
 type HostingConfig struct {
@@ -34,10 +41,10 @@ type HostingConfig struct {
 	Ignore         []string           `json:"ignore"`
 	Redirects      []FirebaseRedirect `json:"redirects"`
 	Rewrites       []json.RawMessage  `json:"rewrites"`
-	Headers        []FirebaseHeader  `json:"headers"`
-	CleanUrls      bool              `json:"cleanUrls"`
-	TrailingSlash  bool              `json:"trailingSlash"`
-	AppAssociation string            `json:"appAssociation"`
+	Headers        []FirebaseHeader   `json:"headers"`
+	CleanUrls      bool               `json:"cleanUrls"`
+	TrailingSlash  bool               `json:"trailingSlash"`
+	AppAssociation string             `json:"appAssociation"`
 }
 
 type FirebaseConfig struct {
@@ -57,8 +64,8 @@ type Redirect struct {
 }
 
 type ServingConfig struct {
-	Headers   []Header   `json:"headers,omitempty"`
-	Redirects []Redirect `json:"redirects,omitempty"`
+	Headers   []Header           `json:"headers,omitempty"`
+	Redirects []FirebaseRedirect `json:"redirects,omitempty"`
 }
 
 // create version call return
