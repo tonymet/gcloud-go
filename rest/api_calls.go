@@ -276,6 +276,10 @@ func FirebaseConfigOrDefault(target string) ServingConfig {
 		}
 	}
 
+	if len(hConfig.Redirects) > 0 {
+		config.Redirects = hConfig.Redirects
+	}
+
 	return config
 }
 

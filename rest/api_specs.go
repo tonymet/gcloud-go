@@ -17,17 +17,34 @@ type FirebaseHeader struct {
 	Headers []FirebaseHeaderKV `json:"headers"`
 }
 
+type FirebaseRedirect struct {
+	Source      string              `json:"source"`
+	Glob        string              `json:"glob,omitempty"`
+	Regex       string              `json:"regex,omitempty"`
+	Destination string              `json:"destination"`
+	Location    string              `json:"location,omitempty"`
+	Type        int                 `json:"type"`
+	StatusCode  int                 `json:"statusCode,omitempty"`
+	Condition   FRRedirectCondition `json:"condition"`
+}
+
+type FRRedirectCondition struct {
+	Headers struct {
+		Host []string `json:"Host"`
+	} `json:"headers"`
+}
+
 type HostingConfig struct {
-	Site           string            `json:"site"`
-	Target         string            `json:"target"`
-	Public         string            `json:"public"`
-	Ignore         []string          `json:"ignore"`
-	Redirects      []json.RawMessage `json:"redirects"`
-	Rewrites       []json.RawMessage `json:"rewrites"`
-	Headers        []FirebaseHeader  `json:"headers"`
-	CleanUrls      bool              `json:"cleanUrls"`
-	TrailingSlash  bool              `json:"trailingSlash"`
-	AppAssociation string            `json:"appAssociation"`
+	Site           string             `json:"site"`
+	Target         string             `json:"target"`
+	Public         string             `json:"public"`
+	Ignore         []string           `json:"ignore"`
+	Redirects      []FirebaseRedirect `json:"redirects"`
+	Rewrites       []json.RawMessage  `json:"rewrites"`
+	Headers        []FirebaseHeader   `json:"headers"`
+	CleanUrls      bool               `json:"cleanUrls"`
+	TrailingSlash  bool               `json:"trailingSlash"`
+	AppAssociation string             `json:"appAssociation"`
 }
 
 type FirebaseConfig struct {
@@ -39,8 +56,16 @@ type Header struct {
 	Headers map[string]string `json:"headers"`
 }
 
+type Redirect struct {
+	Glob       string `json:"glob,omitempty"`
+	Regex      string `json:"regex,omitempty"`
+	StatusCode int    `json:"statusCode"`
+	Location   string `json:"location"`
+}
+
 type ServingConfig struct {
-	Headers []Header `json:"headers"`
+	Headers   []Header           `json:"headers,omitempty"`
+	Redirects []FirebaseRedirect `json:"redirects,omitempty"`
 }
 
 // create version call return
