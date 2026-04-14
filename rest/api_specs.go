@@ -19,12 +19,12 @@ type FirebaseHeader struct {
 
 type FirebaseRedirect struct {
 	Source      string              `json:"source"`
-	Glob        string              `json:"glob"`
-	Regex       string              `json:"regex"`
+	Glob        string              `json:"glob,omitempty"`
+	Regex       string              `json:"regex,omitempty"`
 	Destination string              `json:"destination"`
-	Location    string              `json:"location"`
+	Location    string              `json:"location,omitempty"`
 	Type        int                 `json:"type"`
-	StatusCode  int                 `json:"statusCode"`
+	StatusCode  int                 `json:"statusCode,omitempty"`
 	Condition   FRRedirectCondition `json:"condition"`
 }
 
