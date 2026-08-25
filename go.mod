@@ -2,7 +2,7 @@ module github.com/tonymet/gcloud-go
 
 go 1.25.8
 
-toolchain go1.26.5
+toolchain go1.26.7
 
 require (
 	cloud.google.com/go/auth v0.22.0
